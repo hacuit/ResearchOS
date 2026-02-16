@@ -1,3 +1,9 @@
+databases:
+  - name: researchos-db
+    databaseName: researchos
+    user: researchos_user
+    plan: free
+
 services:
   - type: web
     name: researchos-backend
@@ -6,7 +12,9 @@ services:
     startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: researchos-db
+          property: connectionString
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_ALGORITHM
