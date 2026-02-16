@@ -642,7 +642,7 @@ export default function Home() {
             </div>
           </div>
           <div className="legend">
-            <span className="dot task-dot" /> Task Bar
+            <span className="dot task-dot" /> Task Bar (v1.0)
           </div>
           <div className="gantt-wrap">
             <div className="gantt-head">
