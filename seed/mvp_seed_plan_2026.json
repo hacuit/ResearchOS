@@ -1,0 +1,172 @@
+﻿{
+  "meta": {
+    "workspace_name": "Personal Research Workspace",
+    "target_year": 2026,
+    "gantt_window": "2026-01..2026-12",
+    "status_codes": [
+      "planned",
+      "in_progress",
+      "completed",
+      "on_hold",
+      "stopped",
+      "discarded"
+    ]
+  },
+  "ideas": [
+    {
+      "slug": "timing-aware-mlsd",
+      "title": "Timing-Aware MLSD Calibration Linked with CDR Dynamics",
+      "source_file": "C:/Research/02_ideas/MLSD/timing-aware-MLSD.md",
+      "status": "in_progress",
+      "main_topic_flag": true,
+      "start_month": "2026-01",
+      "target_month": "2026-12",
+      "priority_inputs": { "impact": 5, "effort": 4, "risk": 3, "urgency": 5 }
+    },
+    {
+      "slug": "per-phase-mlsd",
+      "title": "Per-Phase MLSD Adaptation for Time-Interleaved Receivers",
+      "source_file": "C:/Research/02_ideas/MLSD/per-phase-MLSD.md",
+      "status": "in_progress",
+      "main_topic_flag": true,
+      "start_month": "2026-02",
+      "target_month": "2026-10",
+      "priority_inputs": { "impact": 4, "effort": 4, "risk": 3, "urgency": 4 }
+    },
+    {
+      "slug": "fec-aware-mlsd",
+      "title": "FEC-Aware MLSD Optimization via Error-Pattern Shaping",
+      "source_file": "C:/Research/02_ideas/MLSD/FEC-aware-MLSD.md",
+      "status": "planned",
+      "main_topic_flag": true,
+      "start_month": "2026-02",
+      "target_month": "2026-09",
+      "priority_inputs": { "impact": 4, "effort": 3, "risk": 4, "urgency": 3 }
+    },
+    {
+      "slug": "robot-interface",
+      "title": "On-Device Robot AI Optimization and Lightweight Systems",
+      "source_file": "C:/Research/02_ideas/Robot/robot_interface.md",
+      "status": "planned",
+      "main_topic_flag": false,
+      "start_month": "2026-01",
+      "target_month": "2026-12",
+      "priority_inputs": { "impact": 3, "effort": 4, "risk": 3, "urgency": 2 }
+    }
+  ],
+  "tasks": [
+    {
+      "idea_slug": "timing-aware-mlsd",
+      "title": "Duo-MLSD Matlab simulation",
+      "status": "completed",
+      "importance": 5,
+      "start_month": "2026-01",
+      "end_month": "2026-02",
+      "due_month": "2026-02"
+    },
+    {
+      "idea_slug": "timing-aware-mlsd",
+      "title": "Duo-MLSD RTL design",
+      "status": "in_progress",
+      "importance": 5,
+      "start_month": "2026-02",
+      "end_month": "2026-06",
+      "due_month": "2026-06"
+    },
+    {
+      "idea_slug": "timing-aware-mlsd",
+      "title": "Idea verification",
+      "status": "planned",
+      "importance": 4,
+      "start_month": "2026-04",
+      "end_month": "2026-06",
+      "due_month": "2026-06"
+    },
+    {
+      "idea_slug": "timing-aware-mlsd",
+      "title": "FPGA prototyping",
+      "status": "planned",
+      "importance": 4,
+      "start_month": "2026-06",
+      "end_month": "2026-09",
+      "due_month": "2026-09"
+    },
+    {
+      "idea_slug": "timing-aware-mlsd",
+      "title": "Tape-out",
+      "status": "planned",
+      "importance": 3,
+      "start_month": "2026-10",
+      "end_month": "2026-11",
+      "due_month": "2026-11"
+    },
+    {
+      "idea_slug": "fec-aware-mlsd",
+      "title": "Study FEC basics",
+      "status": "in_progress",
+      "importance": 4,
+      "start_month": "2026-01",
+      "end_month": "2026-03",
+      "due_month": "2026-03"
+    },
+    {
+      "idea_slug": "fec-aware-mlsd",
+      "title": "MLSD-FEC behavioral modeling",
+      "status": "planned",
+      "importance": 5,
+      "start_month": "2026-03",
+      "end_month": "2026-05",
+      "due_month": "2026-05"
+    },
+    {
+      "idea_slug": "per-phase-mlsd",
+      "title": "Paper reviews on TRX system",
+      "status": "in_progress",
+      "importance": 3,
+      "start_month": "2026-01",
+      "end_month": "2026-12",
+      "due_month": "2026-12"
+    },
+    {
+      "idea_slug": "per-phase-mlsd",
+      "title": "RX system simulation",
+      "status": "in_progress",
+      "importance": 4,
+      "start_month": "2026-01",
+      "end_month": "2026-12",
+      "due_month": "2026-12"
+    },
+    {
+      "idea_slug": "robot-interface",
+      "title": "Survey on robot interfaces",
+      "status": "in_progress",
+      "importance": 3,
+      "start_month": "2026-01",
+      "end_month": "2026-03",
+      "due_month": "2026-03"
+    },
+    {
+      "idea_slug": "robot-interface",
+      "title": "Idea specification",
+      "status": "planned",
+      "importance": 3,
+      "start_month": "2026-03",
+      "end_month": "2026-06",
+      "due_month": "2026-06"
+    }
+  ],
+  "deliverables": [
+    { "idea_slug": "timing-aware-mlsd", "title": "Parallelized MLSD RTL", "type": "RTL", "due_month": "2026-03", "status": "in_progress" },
+    { "idea_slug": "timing-aware-mlsd", "title": "Verification of proposed MLSD", "type": "Verification", "due_month": "2026-06", "status": "planned" },
+    { "idea_slug": "timing-aware-mlsd", "title": "Paper (ISCAS)", "type": "Paper", "due_month": "2026-09", "status": "planned" },
+    { "idea_slug": "timing-aware-mlsd", "title": "Paper (main)", "type": "Paper", "due_month": "2026-11", "status": "planned" },
+    { "idea_slug": "fec-aware-mlsd", "title": "FEC behavioral model", "type": "Prototype", "due_month": "2026-03", "status": "in_progress" },
+    { "idea_slug": "fec-aware-mlsd", "title": "FEC-MLSD integrated prototype", "type": "Prototype", "due_month": "2026-09", "status": "planned" },
+    { "idea_slug": "robot-interface", "title": "Survey report", "type": "Report", "due_month": "2026-03", "status": "in_progress" },
+    { "idea_slug": "robot-interface", "title": "Paper (RA-L)", "type": "Paper", "due_month": "2026-06", "status": "planned" }
+  ],
+  "ingestion": {
+    "daily_reports_glob": "C:/Research/07_reports/Daily_Report_2026-*.md",
+    "attach_full_markdown": true
+  }
+}

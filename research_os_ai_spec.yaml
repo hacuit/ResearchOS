@@ -1,0 +1,252 @@
+﻿project:
+  name: Research OS - Idea Progress Dashboard
+  version: 0.2
+  architecture:
+    frontend: Next.js
+    backend: FastAPI
+    database: PostgreSQL
+    queue: Redis
+    storage: S3-compatible
+    auth: Email+Password (JWT)
+  deployment_target: Web (PWA-ready)
+  multi_tenant: true
+
+core_principles:
+  source_of_truth:
+    structured_data: WebApp Database
+    semi_structured_data: Local ingestion (daily reports, experiment logs)
+  progress_policy:
+    include_failures_in_progress: false
+  gantt_granularity: month
+  gantt_window_policy:
+    mode: fixed_12_months_per_year
+    example: "2026-01..2026-12"
+
+decisions_confirmed:
+  status_enum_policy:
+    apply_to: [idea, task]
+    internal_codes: [planned, in_progress, completed, on_hold, stopped, discarded]
+    display_labels_ko:
+      planned: 예정
+      in_progress: 진행중
+      completed: 완료
+      on_hold: 보류
+      stopped: 중단
+      discarded: 폐기
+  ai_budget:
+    monthly_usd_cap: 20
+    mvp_agent_scope: [SummarizerAgent]
+
+roles:
+  - owner
+  - editor
+  - viewer
+
+entities:
+
+  workspace:
+    fields:
+      - id: uuid
+      - name: string
+      - created_at: datetime
+
+  user:
+    fields:
+      - id: uuid
+      - email: string
+      - password_hash: string
+      - created_at: datetime
+
+  workspace_member:
+    fields:
+      - workspace_id: uuid
+      - user_id: uuid
+      - role: enum(owner, editor, viewer)
+
+  idea:
+    fields:
+      - id: uuid
+      - workspace_id: uuid
+      - title: string
+      - description: text
+      - status: enum(planned, in_progress, completed, on_hold, stopped, discarded)
+      - main_topic_flag: boolean
+      - start_month: string(YYYY-MM)
+      - target_month: string(YYYY-MM)
+      - priority_inputs:
+          impact: int
+          effort: int
+          risk: int
+          urgency: int
+      - created_at: datetime
+      - updated_at: datetime
+
+  phase:
+    fields:
+      - id: uuid
+      - workspace_id: uuid
+      - idea_id: uuid
+      - title: string
+      - start_month: string(YYYY-MM)
+      - end_month: string(YYYY-MM)
+      - order_index: int
+
+  task:
+    fields:
+      - id: uuid
+      - workspace_id: uuid
+      - idea_id: uuid
+      - phase_id: uuid
+      - title: string
+      - status: enum(planned, in_progress, completed, on_hold, stopped, discarded)
+      - importance: int(1..5)
+      - start_month: string(YYYY-MM)
+      - end_month: string(YYYY-MM)
+      - due_month: string(YYYY-MM)
+      - dependencies: list(task_id)
+      - updated_at: datetime
+
+  deliverable:
+    fields:
+      - id: uuid
+      - workspace_id: uuid
+      - idea_id: uuid
+      - title: string
+      - type: enum(RTL, Verification, Paper, Prototype, Report, Other)
+      - due_month: string(YYYY-MM)
+      - status: enum(planned, in_progress, completed)
+
+  update_log:
+    fields:
+      - id: uuid
+      - workspace_id: uuid
+      - idea_id: uuid
+      - source: enum(manual, daily_report, git, experiment)
+      - title: string
+      - body_md: text
+      - ai_summary: text
+      - ai_tags: list(string)
+      - ai_risk_flags: list(string)
+      - created_at: datetime
+
+  attachment:
+    fields:
+      - id: uuid
+      - workspace_id: uuid
+      - idea_id: uuid
+      - storage_key: string
+      - filename: string
+      - mime: string
+      - size: int
+      - uploaded_at: datetime
+
+progress_calculation:
+  formula: idea_progress = 0.7 * task_completion + 0.3 * deliverable_completion
+  task_completion:
+    definition: completed_tasks / total_tasks (excluding discarded)
+  deliverable_completion:
+    definition: completed_deliverables / total_deliverables
+  rules:
+    - status planned has progress = 0
+    - failure logs are not counted into progress
+
+priority_model:
+  idea_score:
+    formula: >
+      (main_topic_flag * 100) +
+      (impact * 3) +
+      (urgency * 2) +
+      (risk * 1.5) -
+      (effort * 1)
+  task_score:
+    formula: >
+      (importance * 3) +
+      (due_proximity_weight) +
+      (blocked_flag_weight)
+
+risk_detection_rules:
+  - condition: task.due_month < current_month AND task.status != completed
+    action: flag "Delayed"
+  - condition: no update_log in last 14 days AND task.status == in_progress
+    action: flag "Low Activity"
+  - condition: dependency incomplete but child task status == in_progress
+    action: flag "Dependency Violation"
+
+ingestion:
+  daily_report:
+    input_format: markdown
+    section_detection:
+      method: markdown_header_based
+      headers_supported:
+        - Summary
+        - Task Progress
+        - Debugging Sessions
+        - Git Commits
+        - Next Steps
+        - Issues
+    actions:
+      - store full markdown in update_log.body_md
+      - generate ai_summary via SummarizerAgent
+      - extract commit hashes if present
+      - attach metadata date
+
+ai_agents:
+
+  SummarizerAgent:
+    input:
+      - update_log.body_md
+    output:
+      - 5-line structured summary
+      - tags (max 5)
+    constraints:
+      - avoid modifying database state
+      - reference evidence sections if possible
+
+  RiskAgent:
+    input:
+      - update_logs
+      - task statuses
+      - due_month
+    output:
+      - suggested risk flags
+    approval_required: false
+    release_phase: P1
+
+  NextActionAgent:
+    input:
+      - current plan
+      - latest summaries
+    output:
+      - 3~7 recommended next actions
+    approval_required: false
+    release_phase: P1
+
+api_endpoints:
+  - POST /auth/login
+  - GET /me
+  - GET /dashboard/overview
+  - POST /ideas
+  - PATCH /ideas/{id}
+  - GET /ideas/{id}
+  - POST /ideas/{id}/tasks
+  - POST /ideas/{id}/update_logs
+  - POST /ingest/daily_report
+  - POST /attachments/upload
+
+storage_rules:
+  path_pattern: "/{workspace_id}/{idea_id}/{year}/{month}/{filename}"
+  enforce_workspace_prefix: true
+
+security:
+  authentication: JWT
+  authorization: RBAC
+  audit_log_required: true
+  current_usage_model:
+    default_mode: single_owner
+    optional_publication: viewer_readonly_share
+
+future_expansion:
+  - multi_workspace_support
+  - quota_per_workspace
+  - android_wrapper_via_capacitor
+  - notion_sync_readonly

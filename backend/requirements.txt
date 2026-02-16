@@ -1,0 +1,9 @@
+﻿fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-multipart
+sqlalchemy
+psycopg[binary]
+python-jose[cryptography]
+openai

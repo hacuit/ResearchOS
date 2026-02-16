@@ -1,0 +1,31 @@
+﻿### Health
+GET http://127.0.0.1:8000/health
+
+### Login (owner)
+POST http://127.0.0.1:8000/auth/login
+Content-Type: application/json
+
+{
+  "email": "dhkwon@dgist.ac.kr",
+  "password": "change-this-password"
+}
+
+### Me
+GET http://127.0.0.1:8000/me
+Authorization: Bearer {{token}}
+
+### Import seed
+POST http://127.0.0.1:8000/seed/import?path=../seed/mvp_seed_plan_2026.json
+Authorization: Bearer {{token}}
+
+### List ideas
+GET http://127.0.0.1:8000/ideas
+Authorization: Bearer {{token}}
+
+### Bulk ingest reports (replace idea id)
+POST http://127.0.0.1:8000/ingest/daily_reports/bulk?idea_id={{idea_id}}&reports_dir=C:/Research/07_reports
+Authorization: Bearer {{token}}
+
+### Dashboard
+GET http://127.0.0.1:8000/dashboard/overview?month=2026-02
+Authorization: Bearer {{token}}
