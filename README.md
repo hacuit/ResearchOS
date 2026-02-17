@@ -8,10 +8,6 @@
 ![Backend](https://img.shields.io/badge/Backend-FastAPI-009688)
 ![Database](https://img.shields.io/badge/Database-PostgreSQL-336791)
 
-## 🚀 Live Demo
-
-- **Frontend (Web App)**: [https://research-os-fe.vercel.app](https://research-os-fe.vercel.app)
-- **Backend (API Docs)**: [https://researchos-backend.onrender.com/docs](https://researchos-backend.onrender.com/docs)
 
 ---
 
