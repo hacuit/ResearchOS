@@ -1,0 +1,44 @@
+name: Sync Daily Reports
+
+on:
+  push:
+    paths:
+      - 'reports/**'
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login and get token
+        id: auth
+        run: |
+          TOKEN=$(curl -sf -X POST "${{ secrets.API_BASE }}/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"email\": \"${{ secrets.OWNER_EMAIL }}\", \"password\": \"${{ secrets.OWNER_PASSWORD }}\"}" \
+            | jq -r '.access_token')
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Sync reports
+        run: |
+          TOKEN="${{ steps.auth.outputs.token }}"
+          IDEA_ID="${{ secrets.DEFAULT_IDEA_ID }}"
+          API_BASE="${{ secrets.API_BASE }}"
+
+          for file in reports/Daily_Report_*.md; do
+            [ -f "$file" ] || continue
+            TITLE=$(basename "$file")
+            BODY=$(cat "$file")
+            echo "Syncing: $TITLE"
+            curl -sf -X POST "$API_BASE/ingest/direct_report" \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer $TOKEN" \
+              -d "$(jq -n --arg t "$TITLE" --arg b "$BODY" --arg i "$IDEA_ID" \
+                '{source: "github_sync", title: $t, body_md: $b, idea_id: $i}')" \
+              || echo "  Failed to sync $TITLE"
+          done
+          echo "Sync complete"

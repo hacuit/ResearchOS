@@ -1,51 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Sidebar } from "../components/sidebar";
+import { API_BASE } from "../lib/api";
 
 type LoginResponse = { access_token: string; token_type: string };
 type UserProfile = { id: string; email: string; role: string; workspace_id: string };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
-
-function IconDashboard() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </svg>
-  );
-}
-
-function IconAccess() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </svg>
-  );
-}
-
-function IconProject() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-    </svg>
-  );
-}
-
-const sidebarTabs = [
-  { icon: <IconDashboard />, label: "Dashboard", href: "/" },
-  { icon: <IconAccess />, label: "Access", href: "/access" },
-  { icon: <IconProject />, label: "Project Detail", href: "/project" },
-];
-
 export default function AccessPage() {
-  const pathname = usePathname();
   const [email, setEmail] = useState(() => {
     if (typeof window === "undefined") return "dhkwon@dgist.ac.kr";
     return window.localStorage.getItem("owner_email") || "dhkwon@dgist.ac.kr";
@@ -109,27 +71,19 @@ export default function AccessPage() {
 
   async function ingestReports() {
     if (!token) return;
-    const params = new URLSearchParams({
-      reports_dir: "C:/Research/07_reports",
-      pattern: "Daily_Report_2026-*.md",
-    });
-    const res = await fetch(`${API_BASE}/ingest/daily_reports/bulk?${params.toString()}`, { method: "POST", headers });
+    // First get ideas to find an idea_id for bulk ingest
+    const ideasRes = await fetch(`${API_BASE}/ideas`, { headers });
+    if (!ideasRes.ok) { setMessage("Failed to load ideas"); return; }
+    const ideasData = (await ideasRes.json()) as { id: string }[];
+    if (ideasData.length === 0) { setMessage("No ideas found — import seed first"); return; }
+    const ideaId = ideasData[0].id;
+    const res = await fetch(`${API_BASE}/ingest/daily_reports/bulk?idea_id=${ideaId}`, { method: "POST", headers });
     setMessage(res.ok ? "Reports ingested" : `Ingest failed: ${res.status}`);
   }
 
   return (
     <main className="app-shell">
-      <aside className="sidebar">
-        <h1 className="logo">RO</h1>
-        <nav>
-          {sidebarTabs.map((tab) => (
-            <Link key={tab.label} href={tab.href} className={`side-tab ${pathname === tab.href ? "active" : ""}`}>
-              {tab.icon} {tab.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-
+      <Sidebar />
       <div className="content">
         <section className="panel glass">
           <h2>Developer Access</h2>

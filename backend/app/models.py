@@ -72,6 +72,7 @@ class Task(Base):
     end_month: Mapped[str] = mapped_column(String(7), nullable=False)
     due_month: Mapped[str] = mapped_column(String(7), nullable=False)
     dependencies: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     idea: Mapped[Idea] = relationship(back_populates="tasks")

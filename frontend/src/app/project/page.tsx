@@ -1,42 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Sidebar } from "../components/sidebar";
+import { IconSave, IconTrash } from "../components/icons";
+import { statusLabel, statusClass, STATUS_VALUES, DELIVERABLE_STATUS_VALUES } from "../lib/status";
+import { API_BASE } from "../lib/api";
 
 type Idea = { id: string; title: string; status: string; description: string; start_month: string; target_month: string };
 type TaskWithIdea = { id: string; idea_id: string; idea_title: string; title: string; status: string; importance: number; start_month: string; end_month: string; due_month: string };
 type Deliverable = { id: string; idea_id: string; title: string; type: string; status: string; due_month: string };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
-const STATUS_OPTIONS = ["planned", "in_progress", "completed", "on_hold", "stopped", "discarded"] as const;
-const DELIVERABLE_STATUS_OPTIONS = ["planned", "in_progress", "completed"] as const;
-
-function statusLabel(s: string): string {
-  const map: Record<string, string> = { planned: "예정", in_progress: "진행중", completed: "완료", on_hold: "보류", stopped: "중단", discarded: "폐기" };
-  return map[s] || s;
-}
-function statusClass(s: string): string {
-  const map: Record<string, string> = { completed: "chip done", in_progress: "chip prog", planned: "chip plan", on_hold: "chip hold", stopped: "chip stop", discarded: "chip disc" };
-  return map[s] || "chip";
-}
-
-function IconDashboard() { return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>); }
-function IconAccess() { return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>); }
-function IconProject() { return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>); }
-function IconSave() { return (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>); }
-function IconTrash() { return (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>); }
-
-const sidebarTabs = [
-  { icon: <IconDashboard />, label: "Dashboard", href: "/" },
-  { icon: <IconAccess />, label: "Access", href: "/access" },
-  { icon: <IconProject />, label: "Project Detail", href: "/project" },
-];
-
 type Tab = "ideas" | "tasks" | "deliverables";
 
 export default function ProjectPage() {
-  const pathname = usePathname();
   const [token, setToken] = useState("");
   const [message, setMessage] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("ideas");
@@ -111,16 +87,7 @@ export default function ProjectPage() {
 
   return (
     <main className="app-shell">
-      <aside className="sidebar">
-        <h1 className="logo">RO</h1>
-        <nav>
-          {sidebarTabs.map((tab) => (
-            <Link key={tab.label} href={tab.href} className={`side-tab ${pathname === tab.href ? "active" : ""}`}>
-              {tab.icon} {tab.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
+      <Sidebar />
 
       <div className="content">
         <section className="compact-head glass">
@@ -145,7 +112,7 @@ export default function ProjectPage() {
           ))}
         </div>
 
-        {/* ── Ideas ── */}
+        {/* Ideas */}
         {activeTab === "ideas" && (
           <section className="panel glass" style={{ padding: 0, overflow: "hidden" }}>
             <div className="data-table">
@@ -157,7 +124,7 @@ export default function ProjectPage() {
                     return (
                       <tr key={idea.id} className={ed ? "editing" : ""} onClick={() => !ed && startEdit(idea.id, { status: idea.status, title: idea.title, start_month: idea.start_month, target_month: idea.target_month })}>
                         <td>{ed ? <input value={draft.title ?? ""} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} onClick={(e) => e.stopPropagation()} autoFocus /> : <strong>{idea.title}</strong>}</td>
-                        <td>{ed ? <select value={draft.status ?? ""} onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value }))} onClick={(e) => e.stopPropagation()}>{STATUS_OPTIONS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select> : <span className={statusClass(idea.status)}>{statusLabel(idea.status)}</span>}</td>
+                        <td>{ed ? <select value={draft.status ?? ""} onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value }))} onClick={(e) => e.stopPropagation()}>{STATUS_VALUES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select> : <span className={statusClass(idea.status)}>{statusLabel(idea.status)}</span>}</td>
                         <td>{ed ? <input value={draft.start_month ?? ""} onChange={(e) => setDraft((d) => ({ ...d, start_month: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 90 }} /> : idea.start_month}</td>
                         <td>{ed ? <input value={draft.target_month ?? ""} onChange={(e) => setDraft((d) => ({ ...d, target_month: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 90 }} /> : idea.target_month}</td>
                         <td onClick={(e) => e.stopPropagation()}>
@@ -180,7 +147,7 @@ export default function ProjectPage() {
           </section>
         )}
 
-        {/* ── Tasks ── */}
+        {/* Tasks */}
         {activeTab === "tasks" && (
           <section className="panel glass" style={{ padding: 0, overflow: "hidden" }}>
             <div className="data-table">
@@ -193,7 +160,7 @@ export default function ProjectPage() {
                       <tr key={t.id} className={ed ? "editing" : ""} onClick={() => !ed && startEdit(t.id, { status: t.status, title: t.title, start_month: t.start_month, end_month: t.end_month, due_month: t.due_month, importance: String(t.importance) })}>
                         <td>{ed ? <input value={draft.title ?? ""} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} onClick={(e) => e.stopPropagation()} autoFocus /> : <strong>{t.title}</strong>}</td>
                         <td style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{t.idea_title || ideaMap[t.idea_id] || ""}</td>
-                        <td>{ed ? <select value={draft.status ?? ""} onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value }))} onClick={(e) => e.stopPropagation()}>{STATUS_OPTIONS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select> : <span className={statusClass(t.status)}>{statusLabel(t.status)}</span>}</td>
+                        <td>{ed ? <select value={draft.status ?? ""} onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value }))} onClick={(e) => e.stopPropagation()}>{STATUS_VALUES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select> : <span className={statusClass(t.status)}>{statusLabel(t.status)}</span>}</td>
                         <td>{ed ? <input value={draft.start_month ?? ""} onChange={(e) => setDraft((d) => ({ ...d, start_month: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 80 }} /> : t.start_month}</td>
                         <td>{ed ? <input value={draft.end_month ?? ""} onChange={(e) => setDraft((d) => ({ ...d, end_month: e.target.value, due_month: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 80 }} /> : t.end_month}</td>
                         <td>{ed ? <select value={draft.importance ?? "3"} onChange={(e) => setDraft((d) => ({ ...d, importance: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 50 }}>{[1,2,3,4,5].map((n) => <option key={n} value={n}>{n}</option>)}</select> : t.importance}</td>
@@ -217,7 +184,7 @@ export default function ProjectPage() {
           </section>
         )}
 
-        {/* ── Deliverables ── */}
+        {/* Deliverables */}
         {activeTab === "deliverables" && (
           <section className="panel glass" style={{ padding: 0, overflow: "hidden" }}>
             <div className="data-table">
@@ -231,7 +198,7 @@ export default function ProjectPage() {
                         <td>{ed ? <input value={draft.title ?? ""} onChange={(e) => setDraft((dr) => ({ ...dr, title: e.target.value }))} onClick={(e) => e.stopPropagation()} autoFocus /> : <strong>{d.title}</strong>}</td>
                         <td style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{ideaMap[d.idea_id] || ""}</td>
                         <td>{d.type}</td>
-                        <td>{ed ? <select value={draft.status ?? ""} onChange={(e) => setDraft((dr) => ({ ...dr, status: e.target.value }))} onClick={(e) => e.stopPropagation()}>{DELIVERABLE_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select> : <span className={statusClass(d.status)}>{statusLabel(d.status)}</span>}</td>
+                        <td>{ed ? <select value={draft.status ?? ""} onChange={(e) => setDraft((dr) => ({ ...dr, status: e.target.value }))} onClick={(e) => e.stopPropagation()}>{DELIVERABLE_STATUS_VALUES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select> : <span className={statusClass(d.status)}>{statusLabel(d.status)}</span>}</td>
                         <td>{ed ? <input value={draft.due_month ?? ""} onChange={(e) => setDraft((dr) => ({ ...dr, due_month: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 90 }} /> : d.due_month}</td>
                         <td onClick={(e) => e.stopPropagation()}>
                           {ed ? (
