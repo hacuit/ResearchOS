@@ -28,6 +28,8 @@ from .schemas import (
     TaskCreate,
     TaskRead,
     TaskReadWithIdea,
+    TaskReorderRequest,
+    TaskReorderResponse,
     TaskUpdate,
     NextActionsResponse,
     RiskItem,
@@ -97,6 +99,7 @@ def task_to_schema(task: Task) -> TaskRead:
         end_month=task.end_month,
         due_month=task.due_month,
         dependencies=task.dependencies,
+        sort_order=task.sort_order,
         updated_at=task.updated_at,
     )
 
@@ -302,7 +305,7 @@ def list_all_tasks(
 ) -> list[TaskReadWithIdea]:
     _, workspace_id = context
     tasks = db.scalars(
-        select(Task).where(Task.workspace_id == workspace_id).order_by(Task.updated_at.asc())
+        select(Task).where(Task.workspace_id == workspace_id).order_by(Task.sort_order.asc(), Task.updated_at.asc())
     ).all()
     idea_ids = {t.idea_id for t in tasks}
     ideas = db.scalars(select(Idea).where(Idea.id.in_(idea_ids))).all() if idea_ids else []
@@ -322,7 +325,7 @@ def list_tasks(
 ) -> list[TaskRead]:
     _, workspace_id = context
     tasks = db.scalars(
-        select(Task).where(Task.workspace_id == workspace_id, Task.idea_id == idea_id).order_by(Task.updated_at.asc())
+        select(Task).where(Task.workspace_id == workspace_id, Task.idea_id == idea_id).order_by(Task.sort_order.asc(), Task.updated_at.asc())
     ).all()
     return [task_to_schema(item) for item in tasks]
 
@@ -485,6 +488,22 @@ def update_task(
     return task_to_schema(task)
 
 
+@app.patch("/tasks/reorder", response_model=TaskReorderResponse)
+def reorder_tasks(
+    payload: TaskReorderRequest,
+    context: tuple[User, str] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TaskReorderResponse:
+    _, workspace_id = context
+    for idx, task_id in enumerate(payload.task_ids):
+        task = db.scalar(select(Task).where(Task.id == task_id, Task.workspace_id == workspace_id))
+        if task:
+            task.sort_order = idx
+            db.add(task)
+    db.commit()
+    return TaskReorderResponse(reordered=len(payload.task_ids))
+
+
 @app.patch("/deliverables/{deliverable_id}", response_model=DeliverableRead)
 def update_deliverable(
     deliverable_id: str,
@@ -566,7 +585,7 @@ def export_workspace(
 ) -> WorkspaceExportResponse:
     _, workspace_id = context
     ideas = db.scalars(select(Idea).where(Idea.workspace_id == workspace_id).order_by(Idea.created_at.asc())).all()
-    tasks = db.scalars(select(Task).where(Task.workspace_id == workspace_id).order_by(Task.updated_at.asc())).all()
+    tasks = db.scalars(select(Task).where(Task.workspace_id == workspace_id).order_by(Task.sort_order.asc(), Task.updated_at.asc())).all()
     deliverables = db.scalars(
         select(Deliverable).where(Deliverable.workspace_id == workspace_id).order_by(Deliverable.due_month.asc())
     ).all()
@@ -676,8 +695,8 @@ def seed_import(
 @app.post("/ingest/daily_reports/bulk", response_model=BulkIngestResponse)
 def ingest_daily_reports_bulk(
     idea_id: str,
-    reports_dir: str = "C:/Research/07_reports",
-    pattern: str = "Daily_Report_2026-*.md",
+    reports_dir: str = settings.reports_dir,
+    pattern: str = settings.reports_pattern,
     context: tuple[User, str] = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> BulkIngestResponse:
@@ -692,3 +711,53 @@ def ingest_daily_reports_bulk(
 
     imported = bulk_ingest_reports(db, workspace_id, idea_id, report_path, pattern)
     return BulkIngestResponse(imported_logs=imported)
+
+
+@app.get("/settings/sync")
+def get_sync_settings(
+    context: tuple[User, str] = Depends(get_current_user),
+) -> dict[str, str | int]:
+    return {
+        "reports_dir": settings.reports_dir,
+        "reports_pattern": settings.reports_pattern,
+        "view_year": datetime.utcnow().year,
+    }
+
+
+@app.post("/ingest/direct_report", response_model=UpdateLogRead)
+def ingest_direct_report(
+    payload: UpdateLogCreate,
+    context: tuple[User, str] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> UpdateLogRead:
+    _, workspace_id = context
+    idea = db.scalar(select(Idea).where(Idea.id == payload.idea_id, Idea.workspace_id == workspace_id))
+    if not idea:
+        raise HTTPException(status_code=404, detail="Idea not found")
+
+    # Dedup by title
+    exists = db.scalar(
+        select(UpdateLog).where(
+            UpdateLog.workspace_id == workspace_id,
+            UpdateLog.idea_id == payload.idea_id,
+            UpdateLog.title == payload.title,
+        )
+    )
+    if exists:
+        return log_to_schema(exists)
+
+    summary, tags = summarize_markdown(payload.body_md)
+    log = UpdateLog(
+        workspace_id=workspace_id,
+        idea_id=payload.idea_id,
+        source=payload.source or "direct_ingest",
+        title=payload.title,
+        body_md=payload.body_md,
+        ai_summary=summary,
+        ai_tags=tags,
+        ai_risk_flags=[],
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log_to_schema(log)

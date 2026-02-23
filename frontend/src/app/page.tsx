@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { IconThemeLight, IconThemeDark, IconRefresh, IconChevronRight, IconGrip } from "./components/icons";
+import { Sidebar } from "./components/sidebar";
+import { statusClass, statusLabel } from "./lib/status";
+import { API_BASE } from "./lib/api";
 
 type Idea = { id: string; title: string; status: string; start_month: string; target_month: string };
 type Task = {
@@ -40,81 +43,14 @@ type DragState = {
   initialEnd: number;
   pxPerMonth: number;
 };
+type ReorderDragState = {
+  taskId: string;
+  startY: number;
+  currentIndex: number;
+  originalIndex: number;
+};
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
-const VIEW_YEAR = 2026;
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
-
-/* ── SVG Icon components ── */
-function IconDashboard() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </svg>
-  );
-}
-
-function IconAccess() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </svg>
-  );
-}
-
-function IconProject() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-    </svg>
-  );
-}
-
-function IconThemeLight() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="5" />
-      <line x1="12" y1="1" x2="12" y2="3" />
-      <line x1="12" y1="21" x2="12" y2="23" />
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-      <line x1="1" y1="12" x2="3" y2="12" />
-      <line x1="21" y1="12" x2="23" y2="12" />
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-    </svg>
-  );
-}
-
-function IconThemeDark() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
-  );
-}
-
-function IconRefresh() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="23 4 23 10 17 10" />
-      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-    </svg>
-  );
-}
-
-function IconChevronRight() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  );
-}
 
 function monthToIndex(monthStr: string): number {
   const [, mm] = monthStr.split("-");
@@ -123,47 +59,9 @@ function monthToIndex(monthStr: string): number {
   return Math.max(1, Math.min(12, m));
 }
 
-function indexToMonth(monthIndex: number): string {
+function indexToMonth(monthIndex: number, year: number): string {
   const mm = String(Math.max(1, Math.min(12, monthIndex))).padStart(2, "0");
-  return `${VIEW_YEAR}-${mm}`;
-}
-
-function statusClass(status: string): string {
-  switch (status) {
-    case "completed":
-      return "chip done";
-    case "in_progress":
-      return "chip prog";
-    case "planned":
-      return "chip plan";
-    case "on_hold":
-      return "chip hold";
-    case "stopped":
-      return "chip stop";
-    case "discarded":
-      return "chip disc";
-    default:
-      return "chip";
-  }
-}
-
-function statusLabel(status: string): string {
-  switch (status) {
-    case "planned":
-      return "예정";
-    case "in_progress":
-      return "진행중";
-    case "completed":
-      return "완료";
-    case "on_hold":
-      return "보류";
-    case "stopped":
-      return "중단";
-    case "discarded":
-      return "폐기";
-    default:
-      return status;
-  }
+  return `${year}-${mm}`;
 }
 
 function CircleMetric({ label, value, color }: { label: string; value: number; color: string }) {
@@ -197,14 +95,7 @@ function CircleMetric({ label, value, color }: { label: string; value: number; c
   );
 }
 
-const sidebarTabs = [
-  { icon: <IconDashboard />, label: "Dashboard", href: "/" },
-  { icon: <IconAccess />, label: "Access", href: "/access" },
-  { icon: <IconProject />, label: "Project Detail", href: "/project" },
-];
-
 export default function Home() {
-  const pathname = usePathname();
   const [month, setMonth] = useState("2026-02");
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [token, setToken] = useState("");
@@ -221,6 +112,17 @@ export default function Home() {
   const taskRangeEditsRef = useRef<Record<string, { start: number; end: number; dirty: boolean }>>({});
   const [ganttMode, setGanttMode] = useState<"selected" | "all">("selected");
   const [allTasks, setAllTasks] = useState<TaskWithIdea[]>([]);
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
+  const [reorderDrag, setReorderDrag] = useState<ReorderDragState | null>(null);
+
+  const todayPosition = useMemo(() => {
+    const now = new Date();
+    if (now.getFullYear() !== viewYear) return null;
+    const month = now.getMonth(); // 0-indexed
+    const day = now.getDate();
+    const daysInMonth = new Date(viewYear, month + 1, 0).getDate();
+    return ((month + (day - 1) / daysInMonth) / 12) * 100;
+  }, [viewYear]);
 
   const [message, setMessage] = useState("Ready");
   const [busy, setBusy] = useState(false);
@@ -348,11 +250,7 @@ export default function Home() {
     const id = ideaId || selectedIdeaId;
     if (!id) return;
     const authHeaders = tokenOverride ? headersWith(tokenOverride) : headers;
-    const params = new URLSearchParams({
-      idea_id: id,
-      reports_dir: "C:/Research/07_reports",
-      pattern: "Daily_Report_2026-*.md",
-    });
+    const params = new URLSearchParams({ idea_id: id });
     const res = await fetch(`${API_BASE}/ingest/daily_reports/bulk?${params.toString()}`, { method: "POST", headers: authHeaders });
     if (!res.ok) throw new Error(`ingest failed: ${res.status}`);
   }
@@ -526,9 +424,9 @@ export default function Home() {
 
     const payload = {
       status: task.status,
-      start_month: indexToMonth(range.start),
-      end_month: indexToMonth(range.end),
-      due_month: indexToMonth(range.end),
+      start_month: indexToMonth(range.start, viewYear),
+      end_month: indexToMonth(range.end, viewYear),
+      due_month: indexToMonth(range.end, viewYear),
     };
 
     const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
@@ -549,25 +447,79 @@ export default function Home() {
     taskRangeEditsRef.current = { ...taskRangeEditsRef.current, [taskId]: { ...taskRangeEditsRef.current[taskId], dirty: false } };
   }
 
+  const ROW_HEIGHT = 40;
+
+  function beginReorderDrag(e: ReactMouseEvent<HTMLDivElement>, taskId: string, index: number) {
+    e.preventDefault();
+    e.stopPropagation();
+    setReorderDrag({ taskId, startY: e.clientY, currentIndex: index, originalIndex: index });
+  }
+
+  useEffect(() => {
+    if (!reorderDrag) return;
+    const rd = reorderDrag;
+    const taskList = ganttMode === "all" ? allTasks : tasks;
+
+    function onMouseMove(event: MouseEvent) {
+      const deltaY = event.clientY - rd.startY;
+      const deltaIdx = Math.round(deltaY / ROW_HEIGHT);
+      const newIndex = Math.max(0, Math.min(taskList.length - 1, rd.originalIndex + deltaIdx));
+      if (newIndex !== rd.currentIndex) {
+        setReorderDrag((prev) => prev ? { ...prev, currentIndex: newIndex } : null);
+        // Optimistic reorder
+        if (ganttMode === "all") {
+          setAllTasks((prev) => {
+            const next = [...prev];
+            const fromIdx = next.findIndex((t) => t.id === rd.taskId);
+            if (fromIdx === -1) return prev;
+            const [moved] = next.splice(fromIdx, 1);
+            next.splice(newIndex, 0, moved);
+            return next;
+          });
+        } else {
+          setTasks((prev) => {
+            const next = [...prev];
+            const fromIdx = next.findIndex((t) => t.id === rd.taskId);
+            if (fromIdx === -1) return prev;
+            const [moved] = next.splice(fromIdx, 1);
+            next.splice(newIndex, 0, moved);
+            return next;
+          });
+        }
+      }
+    }
+
+    function onMouseUp() {
+      setReorderDrag(null);
+      // Save new order to backend
+      const currentList = ganttMode === "all" ? allTasks : tasks;
+      const taskIds = currentList.map((t) => t.id);
+      void fetch(`${API_BASE}/tasks/reorder`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ task_ids: taskIds }),
+      });
+    }
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reorderDrag]);
+
   return (
     <main className="app-shell">
-      <aside className="sidebar">
-        <h1 className="logo">RO</h1>
-        <nav>
-          {sidebarTabs.map((tab) => (
-            <Link key={tab.label} href={tab.href} className={`side-tab ${pathname === tab.href ? "active" : ""}`}>
-              {tab.icon} {tab.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
+      <Sidebar />
 
       <div className="content">
         {/* ── Header ── */}
         <section className="compact-head glass">
           <div>
             <h2>Research OS</h2>
-            <p className="sub">Idea Dashboard · {VIEW_YEAR}</p>
+            <p className="sub">Idea Dashboard · {viewYear}</p>
           </div>
           <div className="head-tools">
             <button
@@ -578,9 +530,10 @@ export default function Home() {
             >
               {theme === "light" ? <IconThemeDark /> : <IconThemeLight />}
             </button>
+            <div className="toolbar-sep" />
             <label className="toggle-pill" title="Auto-sync reports">
               <input type="checkbox" checked={autoSyncReports} onChange={(e) => setAutoSyncReports(e.target.checked)} />
-              <span>Auto-sync</span>
+              <span>Sync</span>
             </label>
             <button className="icon-btn" onClick={refreshCore} disabled={busy || !selectedIdeaId || !token} title="Refresh" aria-label="Refresh">
               <IconRefresh />
@@ -625,7 +578,14 @@ export default function Home() {
         {/* ── Gantt ── */}
         <section className="panel glass">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h2 style={{ marginBottom: 0 }}>Gantt (Tasks)</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <h2 style={{ marginBottom: 0 }}>Gantt (Tasks)</h2>
+              <div className="year-nav">
+                <button className="year-btn" onClick={() => setViewYear((y) => y - 1)} aria-label="Previous year">&lsaquo;</button>
+                <span className="year-label">{viewYear}</span>
+                <button className="year-btn" onClick={() => setViewYear((y) => y + 1)} aria-label="Next year">&rsaquo;</button>
+              </div>
+            </div>
             <div className="gantt-toggle">
               <button
                 className={ganttMode === "selected" ? "gantt-tab active" : "gantt-tab"}
@@ -649,18 +609,27 @@ export default function Home() {
               <div className="label">{ganttMode === "all" ? "Idea / Task" : "Item"}</div>
               <div className="timeline">
                 {MONTHS.map((m) => <div key={`h-${m}`} className="month-col">{m}</div>)}
+                {todayPosition !== null && (
+                  <div className="today-line" style={{ left: `${todayPosition}%` }}>
+                    <span className="today-label">Today</span>
+                  </div>
+                )}
               </div>
             </div>
-            {(ganttMode === "all" ? allTasks : tasks).map((task) => {
+            {(ganttMode === "all" ? allTasks : tasks).map((task, rowIdx) => {
               const range = taskRange(task);
               const s = range.start;
               const e = range.end;
               const left = ((s - 1) / 12) * 100;
               const width = (Math.max(1, e - s + 1) / 12) * 100;
               const ideaTitle = ganttMode === "all" && "idea_title" in task ? (task as TaskWithIdea).idea_title : "";
+              const isDragging = reorderDrag?.taskId === task.id;
               return (
-                <div className="gantt-row" key={task.id}>
+                <div className={`gantt-row${isDragging ? " reorder-dragging" : ""}`} key={task.id}>
                   <div className="label">
+                    <div className="grip-handle" onMouseDown={(ev) => beginReorderDrag(ev, task.id, rowIdx)} title="Drag to reorder">
+                      <IconGrip />
+                    </div>
                     <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
                       {ideaTitle && <span style={{ fontSize: 11, color: "var(--text-tertiary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ideaTitle}</span>}
                       <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{task.title}</span>
@@ -669,6 +638,7 @@ export default function Home() {
                   </div>
                   <div className="timeline">
                     {MONTHS.map((m) => <div key={`${task.id}-${m}`} className="month-col guide" />)}
+                    {todayPosition !== null && <div className="today-line" style={{ left: `${todayPosition}%` }} />}
                     <div
                       className={`bar task draggable ${task.status === "planned" ? "planned" : ""}`}
                       style={{ left: `${left}%`, width: `${width}%` }}

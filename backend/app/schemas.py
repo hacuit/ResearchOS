@@ -61,6 +61,7 @@ class TaskRead(TaskBase):
     id: str
     workspace_id: str
     idea_id: str
+    sort_order: int = 0
     updated_at: datetime
 
 
@@ -105,6 +106,15 @@ class UpdateLogCreate(BaseModel):
     source: str = "manual"
     title: str
     body_md: str
+    idea_id: str = ""
+
+
+class TaskReorderRequest(BaseModel):
+    task_ids: list[str]
+
+
+class TaskReorderResponse(BaseModel):
+    reordered: int
 
 
 class UpdateLogRead(BaseModel):

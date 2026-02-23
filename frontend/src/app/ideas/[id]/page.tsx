@@ -1,55 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams } from "next/navigation";
+import { Sidebar } from "../../components/sidebar";
+import { statusLabel, statusClass } from "../../lib/status";
+import { API_BASE } from "../../lib/api";
 
 type Idea = { id: string; title: string; status: string; start_month: string; target_month: string };
 type Task = { id: string; title: string; status: string; start_month: string; end_month: string; due_month: string };
 type Deliverable = { id: string; title: string; status: string; due_month: string; type: string };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
-
-function statusLabel(status: string): string {
-  switch (status) {
-    case "planned":
-      return "예정";
-    case "in_progress":
-      return "진행중";
-    case "completed":
-      return "완료";
-    case "on_hold":
-      return "보류";
-    case "stopped":
-      return "중단";
-    case "discarded":
-      return "폐기";
-    default:
-      return status;
-  }
-}
-
-function statusClass(status: string): string {
-  switch (status) {
-    case "completed":
-      return "chip done";
-    case "in_progress":
-      return "chip prog";
-    case "planned":
-      return "chip plan";
-    case "on_hold":
-      return "chip hold";
-    case "stopped":
-      return "chip stop";
-    case "discarded":
-      return "chip disc";
-    default:
-      return "chip";
-  }
-}
-
 export default function IdeaDetailPage() {
-  const pathname = usePathname();
   const params = useParams<{ id: string }>();
   const ideaId = params.id;
 
@@ -97,24 +58,9 @@ export default function IdeaDetailPage() {
     void loadDetail();
   }, [headers, ideaId, token]);
 
-  const sidebarTabs = [
-    { icon: "▣", label: "Dashboard", href: "/" },
-    { icon: "⚙", label: "Access", href: "/access" },
-    { icon: "◇", label: "Project Detail", href: "/project" },
-  ];
-
   return (
     <main className="app-shell">
-      <aside className="sidebar glass">
-        <h1 className="logo">RO</h1>
-        <nav>
-          {sidebarTabs.map((tab) => (
-            <Link key={tab.label} href={tab.href} className={`side-tab ${pathname === tab.href ? "active" : ""}`}>
-              <span>{tab.icon}</span> {tab.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
+      <Sidebar />
 
       <div className="content">
         <section className="panel glass">
