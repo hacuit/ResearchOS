@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconDashboard, IconAccess, IconProject } from "./icons";
+import { IconDashboard, IconAccess, IconProject, IconReports } from "./icons";
 
 const sidebarTabs = [
   { icon: <IconDashboard />, label: "Dashboard", href: "/" },
-  { icon: <IconAccess />, label: "Access", href: "/access" },
-  { icon: <IconProject />, label: "Project Detail", href: "/project" },
+  { icon: <IconProject />, label: "Project", href: "/project" },
+  { icon: <IconReports />, label: "Reports", href: "/reports" },
+  { icon: <IconAccess />, label: "Settings", href: "/access" },
 ];
 
 export function Sidebar() {

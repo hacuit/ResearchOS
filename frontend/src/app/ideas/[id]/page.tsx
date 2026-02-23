@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Sidebar } from "../../components/sidebar";
 import { statusLabel, statusClass } from "../../lib/status";
 import { API_BASE } from "../../lib/api";
+import { useAuth } from "../../lib/auth-context";
 
 type Idea = { id: string; title: string; status: string; start_month: string; target_month: string };
 type Task = { id: string; title: string; status: string; start_month: string; end_month: string; due_month: string };
@@ -14,28 +15,11 @@ export default function IdeaDetailPage() {
   const params = useParams<{ id: string }>();
   const ideaId = params.id;
 
-  const [token] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return window.localStorage.getItem("access_token") || "";
-  });
+  const { token, headers } = useAuth();
   const [idea, setIdea] = useState<Idea | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
-  const [message, setMessage] = useState(() => {
-    if (typeof window === "undefined") return "Loading...";
-    return window.localStorage.getItem("access_token") ? "Loading..." : "Login token missing. Use Access page.";
-  });
-
-  const headers = useMemo(
-    () => ({ "Content-Type": "application/json", Authorization: `Bearer ${token}` }),
-    [token],
-  );
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const savedTheme = window.localStorage.getItem("theme");
-    if (savedTheme === "dark" || savedTheme === "light") document.documentElement.setAttribute("data-theme", savedTheme);
-  }, []);
+  const [message, setMessage] = useState("Loading...");
 
   useEffect(() => {
     if (!token || !ideaId) return;

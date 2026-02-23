@@ -191,3 +191,11 @@ class WorkspaceExportResponse(BaseModel):
     tasks: list[TaskRead]
     deliverables: list[DeliverableRead]
     update_logs: list[UpdateLogRead]
+
+
+class AISettingsResponse(BaseModel):
+    configured: bool
+    model: str
+    status: str
+    message: str
+    monthly_budget_usd: float
