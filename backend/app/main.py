@@ -13,6 +13,7 @@ from .db import Base, SessionLocal, engine, get_db
 from .enums import ItemStatus
 from .models import Deliverable, Idea, Task, UpdateLog, User, WorkspaceMember
 from .schemas import (
+    AISettingsResponse,
     BulkIngestResponse,
     DashboardOverview,
     DeliverableCreate,
@@ -761,3 +762,66 @@ def ingest_direct_report(
     db.commit()
     db.refresh(log)
     return log_to_schema(log)
+
+
+@app.get("/settings/ai", response_model=AISettingsResponse)
+def ai_settings(
+    context: tuple[User, str] = Depends(get_current_user),
+) -> AISettingsResponse:
+    """Check OpenAI API configuration and connectivity status."""
+    _ = context  # auth required
+    key = settings.openai_api_key
+    model = settings.openai_model
+    budget = settings.ai_monthly_budget_usd
+
+    if not key:
+        return AISettingsResponse(
+            configured=False,
+            model=model,
+            status="inactive",
+            message="No API key configured. Using local fallback summarization.",
+            monthly_budget_usd=budget,
+        )
+
+    # Validate key by making a lightweight API call
+    try:
+        import openai
+
+        client = openai.OpenAI(api_key=key)
+        client.models.list()
+        return AISettingsResponse(
+            configured=True,
+            model=model,
+            status="active",
+            message="OpenAI API is connected and working.",
+            monthly_budget_usd=budget,
+        )
+    except Exception as exc:
+        return AISettingsResponse(
+            configured=True,
+            model=model,
+            status="error",
+            message=f"API key set but validation failed: {exc}",
+            monthly_budget_usd=budget,
+        )
+
+
+@app.get("/update_logs", response_model=list[UpdateLogRead])
+def list_update_logs(
+    limit: int = 50,
+    offset: int = 0,
+    idea_id: str | None = None,
+    source: str | None = None,
+    context: tuple[User, str] = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[UpdateLogRead]:
+    """List workspace-wide update logs with optional filters."""
+    _, workspace_id = context
+    q = select(UpdateLog).where(UpdateLog.workspace_id == workspace_id)
+    if idea_id:
+        q = q.where(UpdateLog.idea_id == idea_id)
+    if source:
+        q = q.where(UpdateLog.source == source)
+    q = q.order_by(UpdateLog.created_at.desc()).offset(offset).limit(limit)
+    logs = db.scalars(q).all()
+    return [log_to_schema(log) for log in logs]

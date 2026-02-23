@@ -7,6 +7,7 @@ import { IconThemeLight, IconThemeDark, IconRefresh, IconChevronRight, IconGrip 
 import { Sidebar } from "./components/sidebar";
 import { statusClass, statusLabel } from "./lib/status";
 import { API_BASE } from "./lib/api";
+import { useAuth } from "./lib/auth-context";
 
 type Idea = { id: string; title: string; status: string; start_month: string; target_month: string };
 type Task = {
@@ -96,9 +97,9 @@ function CircleMetric({ label, value, color }: { label: string; value: number; c
 }
 
 export default function Home() {
+  const { token, headers } = useAuth();
   const [month, setMonth] = useState("2026-02");
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [token, setToken] = useState("");
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState("");
@@ -127,20 +128,13 @@ export default function Home() {
   const [message, setMessage] = useState("Ready");
   const [busy, setBusy] = useState(false);
   const [autoSyncReports, setAutoSyncReports] = useState(true);
-  const autoBootRef = useRef(false);
-
-  const headers = useMemo(
-    () => ({ "Content-Type": "application/json", Authorization: `Bearer ${token}` }),
-    [token],
-  );
+  const bootedRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const savedTheme = window.localStorage.getItem("theme");
-    const savedToken = window.localStorage.getItem("access_token");
     const savedSync = window.localStorage.getItem("auto_sync_reports");
     if (savedTheme === "dark" || savedTheme === "light") setTheme(savedTheme);
-    if (savedToken) setToken(savedToken);
     if (savedSync === "true" || savedSync === "false") setAutoSyncReports(savedSync === "true");
   }, []);
 
@@ -151,47 +145,17 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (token) window.localStorage.setItem("access_token", token);
-  }, [token]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
     window.localStorage.setItem("auto_sync_reports", String(autoSyncReports));
   }, [autoSyncReports]);
 
-  async function loginFromLocal(): Promise<string | null> {
-    if (typeof window === "undefined") return null;
-    const email = window.localStorage.getItem("owner_email") || "dhkwon@dgist.ac.kr";
-    const password = window.localStorage.getItem("owner_password") || "asdf";
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!res.ok) return null;
-      const data = (await res.json()) as { access_token: string };
-      setToken(data.access_token);
-      return data.access_token;
-    } catch {
-      return null;
-    }
-  }
-
-  function headersWith(t: string) {
-    return { "Content-Type": "application/json", Authorization: `Bearer ${t}` };
-  }
-
-  async function loadDashboard(tokenOverride?: string) {
-    const authHeaders = tokenOverride ? headersWith(tokenOverride) : headers;
-    const res = await fetch(`${API_BASE}/dashboard/overview?month=${month}`, { headers: authHeaders });
+  async function loadDashboard() {
+    const res = await fetch(`${API_BASE}/dashboard/overview?month=${month}`, { headers });
     if (!res.ok) return;
     setDashboard((await res.json()) as Dashboard);
   }
 
-  async function loadIdeas(tokenOverride?: string): Promise<Idea[]> {
-    const authHeaders = tokenOverride ? headersWith(tokenOverride) : headers;
-    const res = await fetch(`${API_BASE}/ideas`, { headers: authHeaders });
+  async function loadIdeas(): Promise<Idea[]> {
+    const res = await fetch(`${API_BASE}/ideas`, { headers });
     if (!res.ok) return [];
     const data = (await res.json()) as Idea[];
     setIdeas(data);
@@ -199,11 +163,10 @@ export default function Home() {
     return data;
   }
 
-  async function loadTasks(ideaId?: string, tokenOverride?: string) {
+  async function loadTasks(ideaId?: string) {
     const id = ideaId || selectedIdeaId;
     if (!id) return;
-    const authHeaders = tokenOverride ? headersWith(tokenOverride) : headers;
-    const res = await fetch(`${API_BASE}/ideas/${id}/tasks`, { headers: authHeaders });
+    const res = await fetch(`${API_BASE}/ideas/${id}/tasks`, { headers });
     if (!res.ok) return;
     const data = (await res.json()) as Task[];
     setTasks(data);
@@ -219,18 +182,16 @@ export default function Home() {
     setTaskRangeEdits(nextEdits);
   }
 
-  async function loadLogs(ideaId?: string, tokenOverride?: string) {
+  async function loadLogs(ideaId?: string) {
     const id = ideaId || selectedIdeaId;
     if (!id) return;
-    const authHeaders = tokenOverride ? headersWith(tokenOverride) : headers;
-    const res = await fetch(`${API_BASE}/ideas/${id}/update_logs?limit=8`, { headers: authHeaders });
+    const res = await fetch(`${API_BASE}/ideas/${id}/update_logs?limit=8`, { headers });
     if (!res.ok) return;
     setLogs((await res.json()) as UpdateLog[]);
   }
 
-  async function loadAllTasks(tokenOverride?: string) {
-    const authHeaders = tokenOverride ? headersWith(tokenOverride) : headers;
-    const res = await fetch(`${API_BASE}/tasks`, { headers: authHeaders });
+  async function loadAllTasks() {
+    const res = await fetch(`${API_BASE}/tasks`, { headers });
     if (!res.ok) return;
     const data = (await res.json()) as TaskWithIdea[];
     setAllTasks(data);
@@ -246,12 +207,11 @@ export default function Home() {
     }
   }
 
-  async function ingestReports(ideaId?: string, tokenOverride?: string) {
+  async function ingestReports(ideaId?: string) {
     const id = ideaId || selectedIdeaId;
     if (!id) return;
-    const authHeaders = tokenOverride ? headersWith(tokenOverride) : headers;
     const params = new URLSearchParams({ idea_id: id });
-    const res = await fetch(`${API_BASE}/ingest/daily_reports/bulk?${params.toString()}`, { method: "POST", headers: authHeaders });
+    const res = await fetch(`${API_BASE}/ingest/daily_reports/bulk?${params.toString()}`, { method: "POST", headers });
     if (!res.ok) throw new Error(`ingest failed: ${res.status}`);
   }
 
@@ -271,41 +231,31 @@ export default function Home() {
     }
   }
 
-  async function initialLoad(t: string) {
-    const loadedIdeas = await loadIdeas(t);
+  async function initialLoad() {
+    const loadedIdeas = await loadIdeas();
     const ideaId = loadedIdeas[0]?.id || "";
     if (ideaId) {
       setSelectedIdeaId(ideaId);
-      await loadTasks(ideaId, t);
-      await loadLogs(ideaId, t);
+      await loadTasks(ideaId);
+      await loadLogs(ideaId);
     }
-    await Promise.all([loadDashboard(t), loadAllTasks(t)]);
+    await Promise.all([loadDashboard(), loadAllTasks()]);
   }
 
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
-    if (autoBootRef.current) return;
-    autoBootRef.current = true;
-    async function autoBoot() {
+    if (!token || bootedRef.current) return;
+    bootedRef.current = true;
+    async function boot() {
       try {
-        const health = await fetch(`${API_BASE}/health`);
-        if (!health.ok) {
-          setMessage("Backend is not ready.");
-          return;
-        }
-        const t = token || (await loginFromLocal());
-        if (!t) {
-          setMessage("Login required. Go to Access page.");
-          return;
-        }
-        await initialLoad(t);
+        await initialLoad();
         setMessage("Dashboard loaded");
       } catch {
         setMessage("Connection failed. Check backend.");
       }
     }
-    void autoBoot();
-  }, []);
+    void boot();
+  }, [token]);
   /* eslint-enable react-hooks/exhaustive-deps */
 
   useEffect(() => {
