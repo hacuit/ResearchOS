@@ -3,12 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
+import { API_BASE, fetchRetry } from "@/lib/api";
 
 type Idea = { id: string; title: string; status: string; start_month: string; target_month: string };
 type Task = { id: string; title: string; status: string; start_month: string; end_month: string; due_month: string };
 type Deliverable = { id: string; title: string; status: string; due_month: string; type: string };
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
 
 function statusLabel(status: string): string {
   switch (status) {
@@ -80,9 +79,9 @@ export default function IdeaDetailPage() {
     if (!token || !ideaId) return;
     async function loadDetail() {
       const [ideasRes, tasksRes, delRes] = await Promise.all([
-        fetch(`${API_BASE}/ideas`, { headers }),
-        fetch(`${API_BASE}/ideas/${ideaId}/tasks`, { headers }),
-        fetch(`${API_BASE}/ideas/${ideaId}/deliverables`, { headers }),
+        fetchRetry(`${API_BASE}/ideas`, { headers }),
+        fetchRetry(`${API_BASE}/ideas/${ideaId}/tasks`, { headers }),
+        fetchRetry(`${API_BASE}/ideas/${ideaId}/deliverables`, { headers }),
       ]);
       if (!ideasRes.ok || !tasksRes.ok || !delRes.ok) {
         setMessage("Failed to load detail data.");

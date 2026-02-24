@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { API_BASE, fetchRetry } from "@/lib/api";
 
 type Idea = { id: string; title: string; status: string; start_month: string; target_month: string };
 type Task = {
@@ -41,7 +42,6 @@ type DragState = {
   pxPerMonth: number;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
 const VIEW_YEAR = 2026;
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -262,7 +262,7 @@ export default function Home() {
     const email = window.localStorage.getItem("owner_email") || "dhkwon@dgist.ac.kr";
     const password = window.localStorage.getItem("owner_password") || "asdf";
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetchRetry(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -282,14 +282,14 @@ export default function Home() {
 
   async function loadDashboard(tokenOverride?: string) {
     const authHeaders = tokenOverride ? headersWith(tokenOverride) : headers;
-    const res = await fetch(`${API_BASE}/dashboard/overview?month=${month}`, { headers: authHeaders });
+    const res = await fetchRetry(`${API_BASE}/dashboard/overview?month=${month}`, { headers: authHeaders });
     if (!res.ok) return;
     setDashboard((await res.json()) as Dashboard);
   }
 
   async function loadIdeas(tokenOverride?: string): Promise<Idea[]> {
     const authHeaders = tokenOverride ? headersWith(tokenOverride) : headers;
-    const res = await fetch(`${API_BASE}/ideas`, { headers: authHeaders });
+    const res = await fetchRetry(`${API_BASE}/ideas`, { headers: authHeaders });
     if (!res.ok) return [];
     const data = (await res.json()) as Idea[];
     setIdeas(data);
@@ -301,7 +301,7 @@ export default function Home() {
     const id = ideaId || selectedIdeaId;
     if (!id) return;
     const authHeaders = tokenOverride ? headersWith(tokenOverride) : headers;
-    const res = await fetch(`${API_BASE}/ideas/${id}/tasks`, { headers: authHeaders });
+    const res = await fetchRetry(`${API_BASE}/ideas/${id}/tasks`, { headers: authHeaders });
     if (!res.ok) return;
     const data = (await res.json()) as Task[];
     setTasks(data);
@@ -321,14 +321,14 @@ export default function Home() {
     const id = ideaId || selectedIdeaId;
     if (!id) return;
     const authHeaders = tokenOverride ? headersWith(tokenOverride) : headers;
-    const res = await fetch(`${API_BASE}/ideas/${id}/update_logs?limit=8`, { headers: authHeaders });
+    const res = await fetchRetry(`${API_BASE}/ideas/${id}/update_logs?limit=8`, { headers: authHeaders });
     if (!res.ok) return;
     setLogs((await res.json()) as UpdateLog[]);
   }
 
   async function loadAllTasks(tokenOverride?: string) {
     const authHeaders = tokenOverride ? headersWith(tokenOverride) : headers;
-    const res = await fetch(`${API_BASE}/tasks`, { headers: authHeaders });
+    const res = await fetchRetry(`${API_BASE}/tasks`, { headers: authHeaders });
     if (!res.ok) return;
     const data = (await res.json()) as TaskWithIdea[];
     setAllTasks(data);
@@ -353,7 +353,7 @@ export default function Home() {
       reports_dir: "C:/Research/07_reports",
       pattern: "Daily_Report_2026-*.md",
     });
-    const res = await fetch(`${API_BASE}/ingest/daily_reports/bulk?${params.toString()}`, { method: "POST", headers: authHeaders });
+    const res = await fetchRetry(`${API_BASE}/ingest/daily_reports/bulk?${params.toString()}`, { method: "POST", headers: authHeaders });
     if (!res.ok) throw new Error(`ingest failed: ${res.status}`);
   }
 
@@ -361,9 +361,9 @@ export default function Home() {
     const id = ideaId || selectedIdeaId;
     if (!id || !token) return;
     const [pRes, rRes, aRes] = await Promise.all([
-      fetch(`${API_BASE}/ideas/${id}/progress`, { headers }),
-      fetch(`${API_BASE}/ideas/${id}/risks?month=${month}`, { headers }),
-      fetch(`${API_BASE}/ideas/${id}/next_actions?month=${month}`, { headers }),
+      fetchRetry(`${API_BASE}/ideas/${id}/progress`, { headers }),
+      fetchRetry(`${API_BASE}/ideas/${id}/risks?month=${month}`, { headers }),
+      fetchRetry(`${API_BASE}/ideas/${id}/next_actions?month=${month}`, { headers }),
     ]);
     if (pRes.ok) setProgress((await pRes.json()) as IdeaProgress);
     if (rRes.ok) setRisks((await rRes.json()) as RiskItem[]);
@@ -378,10 +378,9 @@ export default function Home() {
     const ideaId = loadedIdeas[0]?.id || "";
     if (ideaId) {
       setSelectedIdeaId(ideaId);
-      await loadTasks(ideaId, t);
-      await loadLogs(ideaId, t);
+      await Promise.allSettled([loadTasks(ideaId, t), loadLogs(ideaId, t)]);
     }
-    await Promise.all([loadDashboard(t), loadAllTasks(t)]);
+    await Promise.allSettled([loadDashboard(t), loadAllTasks(t)]);
   }
 
   /* eslint-disable react-hooks/exhaustive-deps */
@@ -390,7 +389,7 @@ export default function Home() {
     autoBootRef.current = true;
     async function autoBoot() {
       try {
-        const health = await fetch(`${API_BASE}/health`);
+        const health = await fetchRetry(`${API_BASE}/health`, undefined, 5, 3000);
         if (!health.ok) {
           setMessage("Backend is not ready.");
           return;
@@ -531,7 +530,7 @@ export default function Home() {
       due_month: indexToMonth(range.end),
     };
 
-    const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
+    const res = await fetchRetry(`${API_BASE}/tasks/${taskId}`, {
       method: "PATCH",
       headers,
       body: JSON.stringify(payload),

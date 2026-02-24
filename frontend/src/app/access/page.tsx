@@ -3,11 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { API_BASE, fetchRetry } from "@/lib/api";
 
 type LoginResponse = { access_token: string; token_type: string };
 type UserProfile = { id: string; email: string; role: string; workspace_id: string };
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
 
 function IconDashboard() {
   return (
@@ -73,7 +72,7 @@ export default function AccessPage() {
   }, []);
 
   async function login() {
-    const res = await fetch(`${API_BASE}/auth/login`, {
+    const res = await fetchRetry(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -92,7 +91,7 @@ export default function AccessPage() {
 
   async function loadProfile() {
     if (!token) return;
-    const res = await fetch(`${API_BASE}/me`, { headers });
+    const res = await fetchRetry(`${API_BASE}/me`, { headers });
     if (!res.ok) {
       setMessage(`Profile load failed: ${res.status}`);
       return;
@@ -103,7 +102,7 @@ export default function AccessPage() {
 
   async function importSeed() {
     if (!token) return;
-    const res = await fetch(`${API_BASE}/seed/import?path=../seed/mvp_seed_plan_2026.json`, { method: "POST", headers });
+    const res = await fetchRetry(`${API_BASE}/seed/import?path=../seed/mvp_seed_plan_2026.json`, { method: "POST", headers });
     setMessage(res.ok ? "Seed imported" : `Seed import failed: ${res.status}`);
   }
 
@@ -113,7 +112,7 @@ export default function AccessPage() {
       reports_dir: "C:/Research/07_reports",
       pattern: "Daily_Report_2026-*.md",
     });
-    const res = await fetch(`${API_BASE}/ingest/daily_reports/bulk?${params.toString()}`, { method: "POST", headers });
+    const res = await fetchRetry(`${API_BASE}/ingest/daily_reports/bulk?${params.toString()}`, { method: "POST", headers });
     setMessage(res.ok ? "Reports ingested" : `Ingest failed: ${res.status}`);
   }
 

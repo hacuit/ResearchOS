@@ -3,12 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { API_BASE, fetchRetry } from "@/lib/api";
 
 type Idea = { id: string; title: string; status: string; description: string; start_month: string; target_month: string };
 type TaskWithIdea = { id: string; idea_id: string; idea_title: string; title: string; status: string; importance: number; start_month: string; end_month: string; due_month: string };
 type Deliverable = { id: string; idea_id: string; title: string; type: string; status: string; due_month: string };
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000";
 const STATUS_OPTIONS = ["planned", "in_progress", "completed", "on_hold", "stopped", "discarded"] as const;
 const DELIVERABLE_STATUS_OPTIONS = ["planned", "in_progress", "completed"] as const;
 
@@ -59,12 +58,12 @@ export default function ProjectPage() {
 
   async function loadIdeas() {
     if (!token) return;
-    const res = await fetch(`${API_BASE}/ideas`, { headers });
+    const res = await fetchRetry(`${API_BASE}/ideas`, { headers });
     if (res.ok) setIdeas((await res.json()) as Idea[]);
   }
   async function loadAllTasks() {
     if (!token) return;
-    const res = await fetch(`${API_BASE}/tasks`, { headers });
+    const res = await fetchRetry(`${API_BASE}/tasks`, { headers });
     if (res.ok) setAllTasks((await res.json()) as TaskWithIdea[]);
   }
   async function loadAllDeliverables(ideaList?: Idea[]) {
@@ -72,7 +71,7 @@ export default function ProjectPage() {
     const list = ideaList || ideas;
     const all: Deliverable[] = [];
     for (const idea of list) {
-      const res = await fetch(`${API_BASE}/ideas/${idea.id}/deliverables`, { headers });
+      const res = await fetchRetry(`${API_BASE}/ideas/${idea.id}/deliverables`, { headers });
       if (res.ok) all.push(...((await res.json()) as Deliverable[]));
     }
     setAllDeliverables(all);
@@ -81,7 +80,7 @@ export default function ProjectPage() {
   useEffect(() => {
     if (!token) return;
     (async () => {
-      const res = await fetch(`${API_BASE}/ideas`, { headers });
+      const res = await fetchRetry(`${API_BASE}/ideas`, { headers });
       if (!res.ok) return;
       const data = (await res.json()) as Idea[];
       setIdeas(data);
@@ -94,13 +93,13 @@ export default function ProjectPage() {
   function cancelEdit() { setEditId(null); setDraft({}); }
 
   async function patchAndReload(url: string, payload: Record<string, unknown>, reload: () => Promise<void>) {
-    const res = await fetch(url, { method: "PATCH", headers, body: JSON.stringify(payload) });
+    const res = await fetchRetry(url, { method: "PATCH", headers, body: JSON.stringify(payload) });
     if (!res.ok) { setMessage(`Save failed: ${res.status}`); return; }
     setMessage("Saved"); cancelEdit(); await reload();
   }
   async function deleteAndReload(url: string, name: string, reload: () => Promise<void>) {
     if (!confirm(`Delete "${name}"?`)) return;
-    const res = await fetch(url, { method: "DELETE", headers });
+    const res = await fetchRetry(url, { method: "DELETE", headers });
     if (!res.ok) { setMessage(`Delete failed: ${res.status}`); return; }
     setMessage("Deleted"); await reload();
   }
