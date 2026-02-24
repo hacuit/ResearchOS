@@ -68,8 +68,24 @@ ROOT_DIR = BACKEND_DIR.parent
 @app.on_event("startup")
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
+    _run_migrations()
     with SessionLocal() as db:
         ensure_owner_context(db)
+
+
+def _run_migrations() -> None:
+    """Add columns that were introduced after the initial schema."""
+    from sqlalchemy import inspect as sa_inspect, text
+
+    with engine.connect() as conn:
+        inspector = sa_inspect(engine)
+
+        # --- tasks.sort_order (added in PR#2) ---
+        if "tasks" in inspector.get_table_names():
+            cols = {c["name"] for c in inspector.get_columns("tasks")}
+            if "sort_order" not in cols:
+                conn.execute(text("ALTER TABLE tasks ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0"))
+                conn.commit()
 
 
 def idea_to_schema(idea: Idea) -> IdeaRead:

@@ -234,11 +234,17 @@ export default function Home() {
   async function initialLoad() {
     const loadedIdeas = await loadIdeas();
     const ideaId = loadedIdeas[0]?.id || "";
+    const failures: string[] = [];
     if (ideaId) {
       setSelectedIdeaId(ideaId);
-      await Promise.allSettled([loadTasks(ideaId), loadLogs(ideaId)]);
+      const r1 = await Promise.allSettled([loadTasks(ideaId), loadLogs(ideaId)]);
+      if (r1[0].status === "rejected") failures.push("tasks");
+      if (r1[1].status === "rejected") failures.push("logs");
     }
-    await Promise.allSettled([loadDashboard(), loadAllTasks()]);
+    const r2 = await Promise.allSettled([loadDashboard(), loadAllTasks()]);
+    if (r2[0].status === "rejected") failures.push("overview");
+    if (r2[1].status === "rejected") failures.push("all-tasks");
+    return failures;
   }
 
   /* eslint-disable react-hooks/exhaustive-deps */
@@ -247,8 +253,12 @@ export default function Home() {
     bootedRef.current = true;
     async function boot() {
       try {
-        await initialLoad();
-        setMessage("Dashboard loaded");
+        const failures = await initialLoad();
+        if (failures.length > 0) {
+          setMessage(`Loaded (partial – failed: ${failures.join(", ")})`);
+        } else {
+          setMessage("Dashboard loaded");
+        }
       } catch {
         setMessage("Connection failed. Check backend.");
       }
