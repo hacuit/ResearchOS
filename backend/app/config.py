@@ -19,5 +19,9 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-5-mini"
     ai_monthly_budget_usd: float = 20.0
 
+    # Reports ingestion
+    reports_dir: str = "C:/Research/07_reports"
+    reports_pattern: str = "Daily_Report_*.md"
+
 
 settings = Settings()

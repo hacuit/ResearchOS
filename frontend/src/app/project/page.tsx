@@ -1,42 +1,66 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { API_BASE, fetchRetry } from "@/lib/api";
+import { Sidebar } from "../components/sidebar";
+import { IconSave, IconTrash } from "../components/icons";
+import { statusLabel, statusClass, STATUS_VALUES, DELIVERABLE_STATUS_VALUES } from "../lib/status";
+import { API_BASE, fetchRetry } from "../lib/api";
+import { useAuth } from "../lib/auth-context";
+import { NotePanel } from "../components/note-panel";
 
 type Idea = { id: string; title: string; status: string; description: string; start_month: string; target_month: string };
 type TaskWithIdea = { id: string; idea_id: string; idea_title: string; title: string; status: string; importance: number; start_month: string; end_month: string; due_month: string };
 type Deliverable = { id: string; idea_id: string; title: string; type: string; status: string; due_month: string };
-const STATUS_OPTIONS = ["planned", "in_progress", "completed", "on_hold", "stopped", "discarded"] as const;
-const DELIVERABLE_STATUS_OPTIONS = ["planned", "in_progress", "completed"] as const;
-
-function statusLabel(s: string): string {
-  const map: Record<string, string> = { planned: "예정", in_progress: "진행중", completed: "완료", on_hold: "보류", stopped: "중단", discarded: "폐기" };
-  return map[s] || s;
-}
-function statusClass(s: string): string {
-  const map: Record<string, string> = { completed: "chip done", in_progress: "chip prog", planned: "chip plan", on_hold: "chip hold", stopped: "chip stop", discarded: "chip disc" };
-  return map[s] || "chip";
-}
-
-function IconDashboard() { return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>); }
-function IconAccess() { return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>); }
-function IconProject() { return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>); }
-function IconSave() { return (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>); }
-function IconTrash() { return (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>); }
-
-const sidebarTabs = [
-  { icon: <IconDashboard />, label: "Dashboard", href: "/" },
-  { icon: <IconAccess />, label: "Access", href: "/access" },
-  { icon: <IconProject />, label: "Project Detail", href: "/project" },
-];
 
 type Tab = "ideas" | "tasks" | "deliverables";
+type SortConfig = { key: string; direction: "asc" | "desc" } | null;
+
+function cycleSort(current: SortConfig, key: string): SortConfig {
+  if (!current || current.key !== key) return { key, direction: "asc" };
+  if (current.direction === "asc") return { key, direction: "desc" };
+  return null;
+}
+
+function sortIndicator(sort: SortConfig, key: string): string {
+  if (!sort || sort.key !== key) return "";
+  return sort.direction === "asc" ? " \u25B2" : " \u25BC";
+}
+
+function sortData<T>(data: T[], sort: SortConfig): T[] {
+  if (!sort) return data;
+  const { key, direction } = sort;
+  return [...data].sort((a, b) => {
+    const av = (a as Record<string, unknown>)[key];
+    const bv = (b as Record<string, unknown>)[key];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    const an = typeof av === "number" ? av : Number(av);
+    const bn = typeof bv === "number" ? bv : Number(bv);
+    if (Number.isFinite(an) && Number.isFinite(bn)) {
+      return direction === "asc" ? an - bn : bn - an;
+    }
+    const cmp = String(av).localeCompare(String(bv), "ko");
+    return direction === "asc" ? cmp : -cmp;
+  });
+}
+
+function SortHeader({ label, sortKey, sort, onSort, style }: {
+  label: string;
+  sortKey: string;
+  sort: SortConfig;
+  onSort: (key: string) => void;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <th className="sortable" style={style} onClick={() => onSort(sortKey)}>
+      {label}{sortIndicator(sort, sortKey)}
+    </th>
+  );
+}
 
 export default function ProjectPage() {
-  const pathname = usePathname();
-  const [token, setToken] = useState("");
+  const { token, headers } = useAuth();
   const [message, setMessage] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("ideas");
   const [ideas, setIdeas] = useState<Idea[]>([]);
@@ -46,15 +70,13 @@ export default function ProjectPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
 
-  const headers = useMemo(() => ({ "Content-Type": "application/json", Authorization: `Bearer ${token}` }), [token]);
+  // Sort state per tab
+  const [ideaSort, setIdeaSort] = useState<SortConfig>(null);
+  const [taskSort, setTaskSort] = useState<SortConfig>(null);
+  const [delivSort, setDelivSort] = useState<SortConfig>(null);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const savedTheme = window.localStorage.getItem("theme");
-    const savedToken = window.localStorage.getItem("access_token");
-    if (savedTheme === "dark" || savedTheme === "light") document.documentElement.setAttribute("data-theme", savedTheme);
-    if (savedToken) setToken(savedToken);
-  }, []);
+  // Note panel expansion
+  const [noteId, setNoteId] = useState<string | null>(null);
 
   async function loadIdeas() {
     if (!token) return;
@@ -89,8 +111,13 @@ export default function ProjectPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  function startEdit(id: string, init: Record<string, string>) { setEditId(id); setDraft(init); }
+  function startEdit(id: string, init: Record<string, string>) { setEditId(id); setDraft(init); setNoteId(null); }
   function cancelEdit() { setEditId(null); setDraft({}); }
+
+  function toggleNote(ideaId: string) {
+    if (editId) return; // don't open notes while editing
+    setNoteId((prev) => (prev === ideaId ? null : ideaId));
+  }
 
   async function patchAndReload(url: string, payload: Record<string, unknown>, reload: () => Promise<void>) {
     const res = await fetchRetry(url, { method: "PATCH", headers, body: JSON.stringify(payload) });
@@ -108,18 +135,13 @@ export default function ProjectPage() {
   const filteredDeliverables = filterIdeaId ? allDeliverables.filter((d) => d.idea_id === filterIdeaId) : allDeliverables;
   const ideaMap = Object.fromEntries(ideas.map((i) => [i.id, i.title]));
 
+  const sortedIdeas = useMemo(() => sortData(ideas, ideaSort), [ideas, ideaSort]);
+  const sortedTasks = useMemo(() => sortData(filteredTasks, taskSort), [filteredTasks, taskSort]);
+  const sortedDeliverables = useMemo(() => sortData(filteredDeliverables, delivSort), [filteredDeliverables, delivSort]);
+
   return (
     <main className="app-shell">
-      <aside className="sidebar">
-        <h1 className="logo">RO</h1>
-        <nav>
-          {sidebarTabs.map((tab) => (
-            <Link key={tab.label} href={tab.href} className={`side-tab ${pathname === tab.href ? "active" : ""}`}>
-              {tab.icon} {tab.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
+      <Sidebar />
 
       <div className="content">
         <section className="compact-head glass">
@@ -138,38 +160,54 @@ export default function ProjectPage() {
 
         <div className="gantt-toggle" style={{ alignSelf: "flex-start" }}>
           {(["ideas", "tasks", "deliverables"] as Tab[]).map((tab) => (
-            <button key={tab} className={activeTab === tab ? "gantt-tab active" : "gantt-tab"} onClick={() => { setActiveTab(tab); cancelEdit(); }}>
+            <button key={tab} className={activeTab === tab ? "gantt-tab active" : "gantt-tab"} onClick={() => { setActiveTab(tab); cancelEdit(); setNoteId(null); }}>
               {tab === "ideas" ? `Ideas (${ideas.length})` : tab === "tasks" ? `Tasks (${filteredTasks.length})` : `Deliverables (${filteredDeliverables.length})`}
             </button>
           ))}
         </div>
 
-        {/* ── Ideas ── */}
+        {/* Ideas */}
         {activeTab === "ideas" && (
           <section className="panel glass" style={{ padding: 0, overflow: "hidden" }}>
             <div className="data-table">
               <table>
-                <thead><tr><th style={{ width: "35%" }}>Title</th><th>Status</th><th>Start</th><th>Target</th><th style={{ width: 100 }}>Actions</th></tr></thead>
+                <thead>
+                  <tr>
+                    <SortHeader label="Title" sortKey="title" sort={ideaSort} onSort={(k) => setIdeaSort(cycleSort(ideaSort, k))} style={{ width: "35%" }} />
+                    <SortHeader label="Status" sortKey="status" sort={ideaSort} onSort={(k) => setIdeaSort(cycleSort(ideaSort, k))} />
+                    <SortHeader label="Start" sortKey="start_month" sort={ideaSort} onSort={(k) => setIdeaSort(cycleSort(ideaSort, k))} />
+                    <SortHeader label="Target" sortKey="target_month" sort={ideaSort} onSort={(k) => setIdeaSort(cycleSort(ideaSort, k))} />
+                    <th style={{ width: 100 }}>Actions</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {ideas.map((idea) => {
+                  {sortedIdeas.map((idea) => {
                     const ed = editId === idea.id;
+                    const showNote = noteId === idea.id && !ed;
                     return (
-                      <tr key={idea.id} className={ed ? "editing" : ""} onClick={() => !ed && startEdit(idea.id, { status: idea.status, title: idea.title, start_month: idea.start_month, target_month: idea.target_month })}>
-                        <td>{ed ? <input value={draft.title ?? ""} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} onClick={(e) => e.stopPropagation()} autoFocus /> : <strong>{idea.title}</strong>}</td>
-                        <td>{ed ? <select value={draft.status ?? ""} onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value }))} onClick={(e) => e.stopPropagation()}>{STATUS_OPTIONS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select> : <span className={statusClass(idea.status)}>{statusLabel(idea.status)}</span>}</td>
-                        <td>{ed ? <input value={draft.start_month ?? ""} onChange={(e) => setDraft((d) => ({ ...d, start_month: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 90 }} /> : idea.start_month}</td>
-                        <td>{ed ? <input value={draft.target_month ?? ""} onChange={(e) => setDraft((d) => ({ ...d, target_month: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 90 }} /> : idea.target_month}</td>
-                        <td onClick={(e) => e.stopPropagation()}>
-                          {ed ? (
-                            <div style={{ display: "flex", gap: 4 }}>
-                              <button onClick={() => void patchAndReload(`${API_BASE}/ideas/${idea.id}`, draft, loadIdeas)} style={{ height: 28, padding: "0 8px" }}><IconSave /></button>
-                              <button onClick={cancelEdit} style={{ height: 28, padding: "0 8px", background: "var(--bg-sunken)", color: "var(--text-secondary)" }}>Cancel</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => void deleteAndReload(`${API_BASE}/ideas/${idea.id}`, idea.title, async () => { await loadIdeas(); await loadAllTasks(); })} className="btn-del"><IconTrash /></button>
-                          )}
-                        </td>
-                      </tr>
+                      <>
+                        <tr key={idea.id} className={ed ? "editing" : showNote ? "expanded-row" : ""} onDoubleClick={() => !ed && startEdit(idea.id, { status: idea.status, title: idea.title, start_month: idea.start_month, target_month: idea.target_month })} onClick={() => !ed && toggleNote(idea.id)}>
+                          <td>{ed ? <input value={draft.title ?? ""} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} autoFocus /> : <strong>{idea.title}</strong>}</td>
+                          <td>{ed ? <select value={draft.status ?? ""} onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value }))} onClick={(e) => e.stopPropagation()}>{STATUS_VALUES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select> : <span className={statusClass(idea.status)}>{statusLabel(idea.status)}</span>}</td>
+                          <td>{ed ? <input value={draft.start_month ?? ""} onChange={(e) => setDraft((d) => ({ ...d, start_month: e.target.value }))} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} style={{ width: 90 }} /> : idea.start_month}</td>
+                          <td>{ed ? <input value={draft.target_month ?? ""} onChange={(e) => setDraft((d) => ({ ...d, target_month: e.target.value }))} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} style={{ width: 90 }} /> : idea.target_month}</td>
+                          <td onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                            {ed ? (
+                              <div style={{ display: "flex", gap: 4 }}>
+                                <button onClick={() => void patchAndReload(`${API_BASE}/ideas/${idea.id}`, draft, loadIdeas)} style={{ height: 28, padding: "0 8px" }}><IconSave /></button>
+                                <button onClick={cancelEdit} style={{ height: 28, padding: "0 8px", background: "var(--bg-sunken)", color: "var(--text-secondary)" }}>Cancel</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => void deleteAndReload(`${API_BASE}/ideas/${idea.id}`, idea.title, async () => { await loadIdeas(); await loadAllTasks(); })} className="btn-del"><IconTrash /></button>
+                            )}
+                          </td>
+                        </tr>
+                        {showNote && (
+                          <tr key={`note-${idea.id}`} className="note-row">
+                            <td colSpan={5}><NotePanel ideaId={idea.id} /></td>
+                          </tr>
+                        )}
+                      </>
                     );
                   })}
                 </tbody>
@@ -179,34 +217,52 @@ export default function ProjectPage() {
           </section>
         )}
 
-        {/* ── Tasks ── */}
+        {/* Tasks */}
         {activeTab === "tasks" && (
           <section className="panel glass" style={{ padding: 0, overflow: "hidden" }}>
             <div className="data-table">
               <table>
-                <thead><tr><th style={{ width: "25%" }}>Task</th><th>Idea</th><th>Status</th><th>Start</th><th>End</th><th>Imp.</th><th style={{ width: 100 }}>Actions</th></tr></thead>
+                <thead>
+                  <tr>
+                    <SortHeader label="Task" sortKey="title" sort={taskSort} onSort={(k) => setTaskSort(cycleSort(taskSort, k))} style={{ width: "25%" }} />
+                    <SortHeader label="Idea" sortKey="idea_title" sort={taskSort} onSort={(k) => setTaskSort(cycleSort(taskSort, k))} />
+                    <SortHeader label="Status" sortKey="status" sort={taskSort} onSort={(k) => setTaskSort(cycleSort(taskSort, k))} />
+                    <SortHeader label="Start" sortKey="start_month" sort={taskSort} onSort={(k) => setTaskSort(cycleSort(taskSort, k))} />
+                    <SortHeader label="End" sortKey="end_month" sort={taskSort} onSort={(k) => setTaskSort(cycleSort(taskSort, k))} />
+                    <SortHeader label="Imp." sortKey="importance" sort={taskSort} onSort={(k) => setTaskSort(cycleSort(taskSort, k))} />
+                    <th style={{ width: 100 }}>Actions</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {filteredTasks.map((t) => {
+                  {sortedTasks.map((t) => {
                     const ed = editId === t.id;
+                    const showNote = noteId === t.idea_id && !ed && activeTab === "tasks";
                     return (
-                      <tr key={t.id} className={ed ? "editing" : ""} onClick={() => !ed && startEdit(t.id, { status: t.status, title: t.title, start_month: t.start_month, end_month: t.end_month, due_month: t.due_month, importance: String(t.importance) })}>
-                        <td>{ed ? <input value={draft.title ?? ""} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} onClick={(e) => e.stopPropagation()} autoFocus /> : <strong>{t.title}</strong>}</td>
-                        <td style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{t.idea_title || ideaMap[t.idea_id] || ""}</td>
-                        <td>{ed ? <select value={draft.status ?? ""} onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value }))} onClick={(e) => e.stopPropagation()}>{STATUS_OPTIONS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select> : <span className={statusClass(t.status)}>{statusLabel(t.status)}</span>}</td>
-                        <td>{ed ? <input value={draft.start_month ?? ""} onChange={(e) => setDraft((d) => ({ ...d, start_month: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 80 }} /> : t.start_month}</td>
-                        <td>{ed ? <input value={draft.end_month ?? ""} onChange={(e) => setDraft((d) => ({ ...d, end_month: e.target.value, due_month: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 80 }} /> : t.end_month}</td>
-                        <td>{ed ? <select value={draft.importance ?? "3"} onChange={(e) => setDraft((d) => ({ ...d, importance: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 50 }}>{[1,2,3,4,5].map((n) => <option key={n} value={n}>{n}</option>)}</select> : t.importance}</td>
-                        <td onClick={(e) => e.stopPropagation()}>
-                          {ed ? (
-                            <div style={{ display: "flex", gap: 4 }}>
-                              <button onClick={() => { const p: Record<string, unknown> = { ...draft }; if (draft.importance) p.importance = Number(draft.importance); void patchAndReload(`${API_BASE}/tasks/${t.id}`, p, loadAllTasks); }} style={{ height: 28, padding: "0 8px" }}><IconSave /></button>
-                              <button onClick={cancelEdit} style={{ height: 28, padding: "0 8px", background: "var(--bg-sunken)", color: "var(--text-secondary)" }}>Cancel</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => void deleteAndReload(`${API_BASE}/tasks/${t.id}`, t.title, loadAllTasks)} className="btn-del"><IconTrash /></button>
-                          )}
-                        </td>
-                      </tr>
+                      <>
+                        <tr key={t.id} className={ed ? "editing" : ""} onDoubleClick={() => !ed && startEdit(t.id, { status: t.status, title: t.title, start_month: t.start_month, end_month: t.end_month, due_month: t.due_month, importance: String(t.importance) })} onClick={() => !ed && toggleNote(t.idea_id)}>
+                          <td>{ed ? <input value={draft.title ?? ""} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} autoFocus /> : <strong>{t.title}</strong>}</td>
+                          <td style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{t.idea_title || ideaMap[t.idea_id] || ""}</td>
+                          <td>{ed ? <select value={draft.status ?? ""} onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value }))} onClick={(e) => e.stopPropagation()}>{STATUS_VALUES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select> : <span className={statusClass(t.status)}>{statusLabel(t.status)}</span>}</td>
+                          <td>{ed ? <input value={draft.start_month ?? ""} onChange={(e) => setDraft((d) => ({ ...d, start_month: e.target.value }))} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} style={{ width: 80 }} /> : t.start_month}</td>
+                          <td>{ed ? <input value={draft.end_month ?? ""} onChange={(e) => setDraft((d) => ({ ...d, end_month: e.target.value, due_month: e.target.value }))} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} style={{ width: 80 }} /> : t.end_month}</td>
+                          <td>{ed ? <select value={draft.importance ?? "3"} onChange={(e) => setDraft((d) => ({ ...d, importance: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 50 }}>{[1,2,3,4,5].map((n) => <option key={n} value={n}>{n}</option>)}</select> : t.importance}</td>
+                          <td onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                            {ed ? (
+                              <div style={{ display: "flex", gap: 4 }}>
+                                <button onClick={() => { const p: Record<string, unknown> = { ...draft }; if (draft.importance) p.importance = Number(draft.importance); void patchAndReload(`${API_BASE}/tasks/${t.id}`, p, loadAllTasks); }} style={{ height: 28, padding: "0 8px" }}><IconSave /></button>
+                                <button onClick={cancelEdit} style={{ height: 28, padding: "0 8px", background: "var(--bg-sunken)", color: "var(--text-secondary)" }}>Cancel</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => void deleteAndReload(`${API_BASE}/tasks/${t.id}`, t.title, loadAllTasks)} className="btn-del"><IconTrash /></button>
+                            )}
+                          </td>
+                        </tr>
+                        {showNote && (
+                          <tr key={`note-${t.id}`} className="note-row">
+                            <td colSpan={7}><NotePanel ideaId={t.idea_id} /></td>
+                          </tr>
+                        )}
+                      </>
                     );
                   })}
                 </tbody>
@@ -216,33 +272,50 @@ export default function ProjectPage() {
           </section>
         )}
 
-        {/* ── Deliverables ── */}
+        {/* Deliverables */}
         {activeTab === "deliverables" && (
           <section className="panel glass" style={{ padding: 0, overflow: "hidden" }}>
             <div className="data-table">
               <table>
-                <thead><tr><th style={{ width: "30%" }}>Deliverable</th><th>Idea</th><th>Type</th><th>Status</th><th>Due</th><th style={{ width: 100 }}>Actions</th></tr></thead>
+                <thead>
+                  <tr>
+                    <SortHeader label="Deliverable" sortKey="title" sort={delivSort} onSort={(k) => setDelivSort(cycleSort(delivSort, k))} style={{ width: "30%" }} />
+                    <SortHeader label="Idea" sortKey="idea_id" sort={delivSort} onSort={(k) => setDelivSort(cycleSort(delivSort, k))} />
+                    <SortHeader label="Type" sortKey="type" sort={delivSort} onSort={(k) => setDelivSort(cycleSort(delivSort, k))} />
+                    <SortHeader label="Status" sortKey="status" sort={delivSort} onSort={(k) => setDelivSort(cycleSort(delivSort, k))} />
+                    <SortHeader label="Due" sortKey="due_month" sort={delivSort} onSort={(k) => setDelivSort(cycleSort(delivSort, k))} />
+                    <th style={{ width: 100 }}>Actions</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {filteredDeliverables.map((d) => {
+                  {sortedDeliverables.map((d) => {
                     const ed = editId === d.id;
+                    const showNote = noteId === d.idea_id && !ed;
                     return (
-                      <tr key={d.id} className={ed ? "editing" : ""} onClick={() => !ed && startEdit(d.id, { status: d.status, title: d.title, due_month: d.due_month })}>
-                        <td>{ed ? <input value={draft.title ?? ""} onChange={(e) => setDraft((dr) => ({ ...dr, title: e.target.value }))} onClick={(e) => e.stopPropagation()} autoFocus /> : <strong>{d.title}</strong>}</td>
-                        <td style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{ideaMap[d.idea_id] || ""}</td>
-                        <td>{d.type}</td>
-                        <td>{ed ? <select value={draft.status ?? ""} onChange={(e) => setDraft((dr) => ({ ...dr, status: e.target.value }))} onClick={(e) => e.stopPropagation()}>{DELIVERABLE_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select> : <span className={statusClass(d.status)}>{statusLabel(d.status)}</span>}</td>
-                        <td>{ed ? <input value={draft.due_month ?? ""} onChange={(e) => setDraft((dr) => ({ ...dr, due_month: e.target.value }))} onClick={(e) => e.stopPropagation()} style={{ width: 90 }} /> : d.due_month}</td>
-                        <td onClick={(e) => e.stopPropagation()}>
-                          {ed ? (
-                            <div style={{ display: "flex", gap: 4 }}>
-                              <button onClick={() => void patchAndReload(`${API_BASE}/deliverables/${d.id}`, draft, () => loadAllDeliverables())} style={{ height: 28, padding: "0 8px" }}><IconSave /></button>
-                              <button onClick={cancelEdit} style={{ height: 28, padding: "0 8px", background: "var(--bg-sunken)", color: "var(--text-secondary)" }}>Cancel</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => void deleteAndReload(`${API_BASE}/deliverables/${d.id}`, d.title, () => loadAllDeliverables())} className="btn-del"><IconTrash /></button>
-                          )}
-                        </td>
-                      </tr>
+                      <>
+                        <tr key={d.id} className={ed ? "editing" : ""} onDoubleClick={() => !ed && startEdit(d.id, { status: d.status, title: d.title, due_month: d.due_month })} onClick={() => !ed && toggleNote(d.idea_id)}>
+                          <td>{ed ? <input value={draft.title ?? ""} onChange={(e) => setDraft((dr) => ({ ...dr, title: e.target.value }))} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} autoFocus /> : <strong>{d.title}</strong>}</td>
+                          <td style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{ideaMap[d.idea_id] || ""}</td>
+                          <td>{d.type}</td>
+                          <td>{ed ? <select value={draft.status ?? ""} onChange={(e) => setDraft((dr) => ({ ...dr, status: e.target.value }))} onClick={(e) => e.stopPropagation()}>{DELIVERABLE_STATUS_VALUES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}</select> : <span className={statusClass(d.status)}>{statusLabel(d.status)}</span>}</td>
+                          <td>{ed ? <input value={draft.due_month ?? ""} onChange={(e) => setDraft((dr) => ({ ...dr, due_month: e.target.value }))} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} style={{ width: 90 }} /> : d.due_month}</td>
+                          <td onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                            {ed ? (
+                              <div style={{ display: "flex", gap: 4 }}>
+                                <button onClick={() => void patchAndReload(`${API_BASE}/deliverables/${d.id}`, draft, () => loadAllDeliverables())} style={{ height: 28, padding: "0 8px" }}><IconSave /></button>
+                                <button onClick={cancelEdit} style={{ height: 28, padding: "0 8px", background: "var(--bg-sunken)", color: "var(--text-secondary)" }}>Cancel</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => void deleteAndReload(`${API_BASE}/deliverables/${d.id}`, d.title, () => loadAllDeliverables())} className="btn-del"><IconTrash /></button>
+                            )}
+                          </td>
+                        </tr>
+                        {showNote && (
+                          <tr key={`note-${d.id}`} className="note-row">
+                            <td colSpan={6}><NotePanel ideaId={d.idea_id} /></td>
+                          </tr>
+                        )}
+                      </>
                     );
                   })}
                 </tbody>
