@@ -104,7 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-slate-200/80 bg-white transition-[width] duration-200 lg:flex",
+          "no-print fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-slate-200/80 bg-white transition-[width] duration-200 lg:flex",
           collapsed ? "w-16" : "w-64"
         )}
       >
@@ -169,7 +169,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div
         className={cn(
           "flex min-h-dvh flex-col transition-[padding] duration-200",
-          collapsed ? "lg:pl-16" : "lg:pl-64"
+          collapsed ? "lg:pl-16" : "lg:pl-64",
+          "print:pl-0"
         )}
       >
         {/* Topbar */}
