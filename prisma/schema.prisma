@@ -1,0 +1,300 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------- Enums ----------
+
+enum ProjectStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  STOPPED
+  DISCARDED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  ON_HOLD
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum IdeaStatus {
+  EXPLORING
+  ON_HOLD
+  PROMOTED
+  DISCARDED
+}
+
+enum ReadingStatus {
+  TO_READ
+  READING
+  DONE
+  SKIMMED
+}
+
+enum PlanKind {
+  TODO
+  EVENT
+}
+
+enum RecurrenceFreq {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+// ---------- Research ----------
+
+model Project {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  status      ProjectStatus @default(PLANNED)
+  color       String?
+  startDate   DateTime?     @db.Date
+  targetDate  DateTime?     @db.Date
+  tags        String[]      @default([])
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  tasks       Task[]
+  milestones  Milestone[]
+  logs        ResearchLog[]
+}
+
+model Task {
+  id        String     @id @default(cuid())
+  projectId String
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  status    TaskStatus @default(TODO)
+  priority  Priority   @default(MEDIUM)
+  progress  Int        @default(0)
+  startDate DateTime?  @db.Date
+  dueDate   DateTime?  @db.Date
+  sortOrder Int        @default(0)
+  notes     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([projectId])
+}
+
+model Milestone {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  kind      String?
+  dueDate   DateTime @db.Date
+  done      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model ResearchLog {
+  id          String   @id @default(cuid())
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  date        DateTime @db.Date
+  title       String
+  bodyMd      String
+  source      String   @default("manual")
+  sourceFile  String?
+  contentHash String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([source, sourceFile])
+  @@index([date])
+}
+
+// ---------- Ideas ----------
+
+model Idea {
+  id                String     @id @default(cuid())
+  title             String
+  body              String?
+  status            IdeaStatus @default(EXPLORING)
+  tags              String[]   @default([])
+  promotedProjectId String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+}
+
+// ---------- Papers ----------
+
+model Paper {
+  id        String        @id @default(cuid())
+  title     String
+  authors   String?
+  venue     String?
+  year      Int?
+  url       String?
+  doi       String?
+  status    ReadingStatus @default(TO_READ)
+  rating    Int?
+  tags      String[]      @default([])
+  category  String?
+  summaryMd String?
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+// ---------- Library ----------
+
+model LibraryItem {
+  id        String   @id @default(cuid())
+  title     String
+  url       String?
+  snippet   String?
+  category  String?
+  tags      String[] @default([])
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------- Planner ----------
+
+model PlanItem {
+  id              String         @id @default(cuid())
+  title           String
+  kind            PlanKind       @default(TODO)
+  date            DateTime       @db.Date
+  endDate         DateTime?      @db.Date
+  priority        Priority       @default(MEDIUM)
+  done            Boolean        @default(false)
+  progress        Int            @default(0)
+  notes           String?
+  recurrence      RecurrenceFreq @default(NONE)
+  recurrenceUntil DateTime?      @db.Date
+  seriesId        String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([date])
+}
+
+// ---------- Routine ----------
+
+model ConditionLog {
+  id           String   @id @default(cuid())
+  date         DateTime @unique @db.Date
+  mood         Int?
+  energy       Int?
+  sleepHours   Float?
+  sleepQuality Int?
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Habit {
+  id         String     @id @default(cuid())
+  name       String
+  icon       String?
+  daysOfWeek Int[]      @default([])
+  active     Boolean    @default(true)
+  sortOrder  Int        @default(0)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  logs       HabitLog[]
+}
+
+model HabitLog {
+  id      String   @id @default(cuid())
+  habitId String
+  habit   Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  date    DateTime @db.Date
+  done    Boolean  @default(true)
+
+  @@unique([habitId, date])
+}
+
+// ---------- Docs ----------
+
+model ExpenseItem {
+  id           String   @id @default(cuid())
+  date         DateTime @db.Date
+  item         String
+  amount       Int
+  category     String?
+  vendor       String?
+  note         String?
+  receiptFiled Boolean  @default(false)
+  recurringId  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([date])
+}
+
+model RecurringExpense {
+  id         String   @id @default(cuid())
+  item       String
+  amount     Int
+  category   String?
+  vendor     String?
+  dayOfMonth Int      @default(1)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model TripReport {
+  id          String   @id @default(cuid())
+  title       String
+  destination String
+  startDate   DateTime @db.Date
+  endDate     DateTime @db.Date
+  purpose     String
+  outcomesMd  String?
+  expenses    Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ProposalDoc {
+  id             String    @id @default(cuid())
+  title          String
+  agency         String?
+  program        String?
+  deadline       DateTime? @db.Date
+  budget         String?
+  durationMonths Int?
+  abstractMd     String?
+  status         String    @default("draft")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+// ---------- Settings ----------
+
+model ApiToken {
+  id         String    @id @default(cuid())
+  name       String
+  tokenHash  String    @unique
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+}
