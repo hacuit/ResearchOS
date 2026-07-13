@@ -87,7 +87,7 @@ async function main() {
     },
   });
 
-  const p3 = await db.project.create({
+  await db.project.create({
     data: {
       title: "멀티모달 센서 융합 사이드 프로젝트",
       description: "IMU + 카메라 융합 기반 행동 인식",

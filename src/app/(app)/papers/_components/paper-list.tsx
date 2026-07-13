@@ -10,7 +10,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { Badge, Tag } from "@/components/ui/badge";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { READING_STATUS_LABELS, READING_STATUS_TONES } from "@/lib/labels";
+import { READING_STATUS_LABELS } from "@/lib/labels";
 import { cn } from "@/lib/cn";
 
 export type PaperData = {

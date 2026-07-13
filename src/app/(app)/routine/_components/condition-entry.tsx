@@ -103,7 +103,7 @@ export function ConditionEntry({
             defaultValue={values.sleepHours ?? ""}
             className="w-24 text-right"
           />
-          <span className="text-xs text-slate-400">시간</span>
+          <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">시간</span>
         </div>
       </div>
       <Input name="note" placeholder="한 줄 메모 (선택)" defaultValue={values.note} maxLength={300} />
