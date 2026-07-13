@@ -13,6 +13,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@paralleldrive/cuid2": "^3.3.0",
     "@prisma/client": "^6.19.3",
     "date-fns": "^4.4.0",
     "jose": "^6.2.3",
