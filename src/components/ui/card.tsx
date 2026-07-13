@@ -38,12 +38,12 @@ export function CardTitle({
 }
 
 const TINTS = {
-  indigo: "bg-primary-50 text-primary-600",
-  violet: "bg-accent-100 text-accent-600",
-  green: "bg-emerald-50 text-emerald-600",
-  amber: "bg-amber-50 text-amber-600",
-  red: "bg-red-50 text-red-600",
-  slate: "bg-slate-100 text-slate-600",
+  indigo: "text-primary-500",
+  violet: "text-accent-500",
+  green: "text-emerald-500",
+  amber: "text-amber-500",
+  red: "text-red-500",
+  slate: "text-slate-400",
 } as const;
 
 export function StatCard({
@@ -60,20 +60,15 @@ export function StatCard({
   tint?: keyof typeof TINTS;
 }) {
   return (
-    <Card className="flex items-center gap-4 p-4">
-      <div
-        className={cn(
-          "flex size-11 shrink-0 items-center justify-center rounded-xl",
-          TINTS[tint]
-        )}
-      >
-        <Icon className="size-5" />
-      </div>
-      <div className="min-w-0">
+    <Card className="p-4">
+      <div className="flex items-center justify-between gap-2">
         <p className="truncate text-xs font-medium text-slate-500">{label}</p>
-        <p className="text-xl font-bold text-slate-900">{value}</p>
-        {sub && <p className="truncate text-xs text-slate-400">{sub}</p>}
+        <Icon className={cn("size-4 shrink-0", TINTS[tint])} />
       </div>
+      <p className="mt-1.5 text-[22px] font-bold leading-tight tracking-tight text-slate-900">
+        {value}
+      </p>
+      {sub && <p className="mt-0.5 truncate text-[11px] text-slate-400">{sub}</p>}
     </Card>
   );
 }

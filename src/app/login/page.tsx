@@ -35,11 +35,11 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-primary-600 via-primary-700 to-accent-700 p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-2xl">
+    <main className="flex min-h-dvh items-center justify-center bg-canvas p-4">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 text-white shadow-lg">
-            <FlaskConical className="size-7" />
+          <div className="flex size-12 items-center justify-center rounded-xl bg-primary-600 text-white">
+            <FlaskConical className="size-6" />
           </div>
           <div className="text-center">
             <h1 className="text-xl font-bold text-slate-900">ResearchOS</h1>

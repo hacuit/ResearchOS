@@ -59,14 +59,11 @@ function NavLinks({
 function Brand({ collapsed }: { collapsed?: boolean }) {
   return (
     <div className={cn("flex items-center gap-2.5 px-5 py-5", collapsed && "justify-center px-0")}>
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 text-white shadow-md">
-        <FlaskConical className="size-5" />
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-white">
+        <FlaskConical className="size-4.5" />
       </div>
       {!collapsed && (
-        <div className="leading-tight">
-          <p className="text-sm font-bold text-slate-900">ResearchOS</p>
-          <p className="text-[11px] text-slate-400">Research Dashboard</p>
-        </div>
+        <p className="text-[15px] font-bold tracking-tight text-slate-900">ResearchOS</p>
       )}
     </div>
   );

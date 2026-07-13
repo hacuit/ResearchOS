@@ -12,6 +12,8 @@ import { cn } from "@/lib/cn";
 export type HabitRowData = {
   id: string;
   name: string;
+  icon: string;
+  color: string;
   daysOfWeek: number[];
   active: boolean;
   streak: number;
@@ -20,6 +22,17 @@ export type HabitRowData = {
 };
 
 const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+
+export const HABIT_COLORS = [
+  "#93c5fd", // blue
+  "#c4b5fd", // violet
+  "#fdba74", // orange
+  "#fca5a5", // red
+  "#86efac", // green
+  "#5eead4", // teal
+  "#f9a8d4", // pink
+  "#fde047", // yellow
+];
 
 function HabitFormDialog({
   open,
@@ -39,8 +52,32 @@ function HabitFormDialog({
   return (
     <Dialog open={open} onClose={onClose} title={habit ? "루틴 편집" : "새 루틴"}>
       <form action={handleAction} className="space-y-4">
-        <Field label="이름" required>
-          <Input name="name" defaultValue={habit?.name} required maxLength={100} />
+        <div className="grid grid-cols-[4.5rem_1fr] gap-3">
+          <Field label="이모지">
+            <Input name="icon" defaultValue={habit?.icon} placeholder="📖" maxLength={4} className="text-center" />
+          </Field>
+          <Field label="이름" required>
+            <Input name="name" defaultValue={habit?.name} required maxLength={100} />
+          </Field>
+        </div>
+        <Field label="색상">
+          <div className="flex flex-wrap gap-2">
+            {HABIT_COLORS.map((c) => (
+              <label key={c} className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="color"
+                  value={c}
+                  defaultChecked={habit ? habit.color === c : c === HABIT_COLORS[0]}
+                  className="peer sr-only"
+                />
+                <span
+                  className="block size-8 rounded-lg ring-2 ring-transparent ring-offset-2 transition peer-checked:ring-slate-400"
+                  style={{ backgroundColor: c }}
+                />
+              </label>
+            ))}
+          </div>
         </Field>
         <Field label="요일 (미선택 시 매일)">
           <div className="flex gap-1.5">
@@ -128,8 +165,9 @@ export function HabitTracker({
           <tbody>
             {habits.map((habit) => (
               <tr key={habit.id} className="group border-t border-slate-50">
-                <td className="max-w-40 py-2 pr-2">
+                <td className="max-w-44 py-2 pr-2">
                   <p className={cn("truncate text-xs font-semibold", habit.active ? "text-slate-700" : "text-slate-300")}>
+                    {habit.icon && <span className="mr-1">{habit.icon}</span>}
                     {habit.name}
                   </p>
                   {habit.daysOfWeek.length > 0 && (
@@ -157,9 +195,10 @@ export function HabitTracker({
                           !scheduled || !habit.active
                             ? "cursor-default bg-slate-50 text-slate-200"
                             : done
-                              ? "cursor-pointer bg-primary-600 text-white shadow-sm hover:bg-primary-700"
-                              : "cursor-pointer bg-slate-100 text-slate-300 hover:bg-primary-100 hover:text-primary-500"
+                              ? "cursor-pointer text-white/90 hover:opacity-80"
+                              : "cursor-pointer bg-slate-100 text-slate-300 hover:bg-slate-200"
                         )}
+                        style={done && scheduled && habit.active ? { backgroundColor: habit.color } : undefined}
                         aria-label={`${habit.name} ${d.date}`}
                       >
                         {done ? "✓" : scheduled ? "·" : ""}

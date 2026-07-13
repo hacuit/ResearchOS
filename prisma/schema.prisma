@@ -214,6 +214,7 @@ model Habit {
   id         String     @id @default(cuid())
   name       String
   icon       String?
+  color      String?
   daysOfWeek Int[]      @default([])
   active     Boolean    @default(true)
   sortOrder  Int        @default(0)

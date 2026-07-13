@@ -9,9 +9,9 @@ function day(offset: number): Date {
   return d;
 }
 
-function monthDay(monthOffset: number, dayOfMonth: number): Date {
-  const now = new Date();
-  return new Date(Date.UTC(now.getFullYear(), now.getMonth() + monthOffset, dayOfMonth));
+/** Date in the seed's reference year (2026). */
+function ymd(month: number, dayOfMonth: number, year = 2026): Date {
+  return new Date(Date.UTC(year, month - 1, dayOfMonth));
 }
 
 async function main() {
@@ -32,31 +32,33 @@ async function main() {
   await db.tripReport.deleteMany();
   await db.proposalDoc.deleteMany();
 
-  // ---------- Projects / Tasks / Milestones ----------
+  // ---------- Projects / Tasks / Milestones (2026 연구 계획) ----------
   const p1 = await db.project.create({
     data: {
-      title: "온디바이스 LLM 경량화 연구",
-      description: "모바일 환경을 위한 LLM 양자화 및 지식 증류 기법 연구",
+      title: "Timing-Aware MLSD Calibration Linked with CDR Dynamics",
+      description:
+        "CDR 동특성과 연동되는 타이밍 인지형 MLSD 캘리브레이션 기법. Duo-MLSD 구조의 RTL 구현과 FPGA 검증, 연말 테이프아웃까지가 올해 목표.",
       status: "IN_PROGRESS",
       color: "#4f46e5",
-      startDate: monthDay(-3, 2),
-      targetDate: monthDay(6, 28),
-      tags: ["quantization", "distillation", "on-device"],
+      startDate: ymd(1, 5),
+      targetDate: ymd(12, 20),
+      tags: ["MLSD", "CDR", "SerDes"],
       sortOrder: 0,
       tasks: {
         create: [
-          { title: "관련 논문 서베이 (양자화 최신 동향)", status: "DONE", priority: "HIGH", progress: 100, startDate: monthDay(-3, 2), dueDate: monthDay(-2, 15), sortOrder: 0 },
-          { title: "베이스라인 모델 벤치마크 구축", status: "DONE", priority: "HIGH", progress: 100, startDate: monthDay(-2, 10), dueDate: monthDay(-1, 5), sortOrder: 1 },
-          { title: "INT4 양자화 실험 및 성능 분석", status: "IN_PROGRESS", priority: "URGENT", progress: 65, startDate: monthDay(-1, 6), dueDate: day(10), sortOrder: 2 },
-          { title: "지식 증류 파이프라인 구현", status: "IN_PROGRESS", priority: "HIGH", progress: 30, startDate: day(-14), dueDate: monthDay(1, 20), sortOrder: 3 },
-          { title: "논문 초안 작성", status: "TODO", priority: "MEDIUM", progress: 0, startDate: monthDay(2, 1), dueDate: monthDay(3, 15), sortOrder: 4 },
+          { title: "Duo-MLSD Matlab 시뮬레이션", status: "DONE", priority: "URGENT", progress: 100, startDate: ymd(1, 5), dueDate: ymd(2, 28), sortOrder: 0 },
+          { title: "Duo-MLSD RTL 설계", status: "IN_PROGRESS", priority: "URGENT", progress: 75, startDate: ymd(2, 10), dueDate: ymd(7, 31), sortOrder: 1 },
+          { title: "제안 기법 검증 (behavioral + RTL 교차검증)", status: "IN_PROGRESS", priority: "HIGH", progress: 40, startDate: ymd(4, 1), dueDate: ymd(8, 15), sortOrder: 2 },
+          { title: "FPGA 프로토타이핑", status: "TODO", priority: "HIGH", progress: 0, startDate: ymd(8, 1), dueDate: ymd(9, 30), sortOrder: 3 },
+          { title: "테이프아웃", status: "TODO", priority: "MEDIUM", progress: 0, startDate: ymd(10, 1), dueDate: ymd(11, 30), sortOrder: 4 },
         ],
       },
       milestones: {
         create: [
-          { title: "중간 발표", kind: "발표", dueDate: monthDay(-1, 25), done: true },
-          { title: "1차 실험 결과 정리", kind: "보고서", dueDate: day(14), done: false },
-          { title: "학회 논문 제출 (NeurIPS)", kind: "논문", dueDate: monthDay(4, 15), done: false },
+          { title: "Parallelized MLSD RTL", kind: "RTL", dueDate: ymd(3, 31), done: true },
+          { title: "제안 MLSD 검증 완료", kind: "Verification", dueDate: ymd(8, 15), done: false },
+          { title: "ISCAS 논문 제출", kind: "논문", dueDate: ymd(9, 30), done: false },
+          { title: "메인 논문 제출", kind: "논문", dueDate: ymd(11, 30), done: false },
         ],
       },
     },
@@ -64,24 +66,52 @@ async function main() {
 
   const p2 = await db.project.create({
     data: {
-      title: "연합학습 프라이버시 보호 기법",
-      description: "차분 프라이버시 기반 연합학습 프레임워크 개선",
+      title: "Per-Phase MLSD Adaptation for Time-Interleaved RX",
+      description:
+        "타임 인터리브 수신기에서 위상별 특성 편차를 반영하는 per-phase MLSD 적응 기법. RX 시스템 시뮬레이션과 TRX 논문 리뷰를 병행.",
       status: "IN_PROGRESS",
       color: "#8b5cf6",
-      startDate: monthDay(-1, 5),
-      targetDate: monthDay(8, 30),
-      tags: ["federated-learning", "privacy"],
+      startDate: ymd(2, 2),
+      targetDate: ymd(10, 30),
+      tags: ["MLSD", "time-interleaved", "adaptation"],
       sortOrder: 1,
       tasks: {
         create: [
-          { title: "기존 프레임워크 코드 분석", status: "DONE", priority: "MEDIUM", progress: 100, startDate: monthDay(-1, 5), dueDate: day(-10), sortOrder: 0 },
-          { title: "DP-SGD 노이즈 스케줄 실험", status: "IN_PROGRESS", priority: "HIGH", progress: 40, startDate: day(-7), dueDate: day(21), sortOrder: 1 },
-          { title: "통신 효율 최적화 방안 조사", status: "TODO", priority: "LOW", progress: 0, dueDate: monthDay(2, 10), sortOrder: 2 },
+          { title: "TRX 시스템 논문 리뷰 (연중)", status: "IN_PROGRESS", priority: "MEDIUM", progress: 55, startDate: ymd(1, 5), dueDate: ymd(12, 20), sortOrder: 0 },
+          { title: "RX 시스템 시뮬레이션", status: "IN_PROGRESS", priority: "HIGH", progress: 50, startDate: ymd(1, 12), dueDate: ymd(9, 30), sortOrder: 1 },
+          { title: "위상별 적응 알고리즘 정식화", status: "TODO", priority: "HIGH", progress: 0, startDate: ymd(8, 1), dueDate: ymd(10, 15), sortOrder: 2 },
         ],
       },
       milestones: {
         create: [
-          { title: "프로토타입 구현", kind: "프로토타입", dueDate: monthDay(2, 28), done: false },
+          { title: "RX 시뮬레이션 프레임워크 v1", kind: "Prototype", dueDate: ymd(6, 30), done: true },
+        ],
+      },
+    },
+  });
+
+  const p3 = await db.project.create({
+    data: {
+      title: "FEC-Aware MLSD Optimization via Error-Pattern Shaping",
+      description:
+        "FEC(KP4 RS-FEC) 디코더 특성을 고려해 MLSD의 에러 패턴을 성형하는 최적화 연구. FEC 기초 스터디 후 behavioral 모델링 진행 중.",
+      status: "IN_PROGRESS",
+      color: "#0ea5e9",
+      startDate: ymd(2, 16),
+      targetDate: ymd(9, 30),
+      tags: ["MLSD", "FEC", "error-shaping"],
+      sortOrder: 2,
+      tasks: {
+        create: [
+          { title: "FEC 기초 스터디 (RS-FEC, KP4)", status: "DONE", priority: "HIGH", progress: 100, startDate: ymd(1, 12), dueDate: ymd(3, 31), sortOrder: 0 },
+          { title: "MLSD-FEC behavioral 모델링", status: "IN_PROGRESS", priority: "URGENT", progress: 60, startDate: ymd(3, 15), dueDate: ymd(8, 31), sortOrder: 1 },
+          { title: "에러 패턴 통계 분석", status: "IN_PROGRESS", priority: "MEDIUM", progress: 30, startDate: ymd(6, 1), dueDate: ymd(9, 15), sortOrder: 2 },
+        ],
+      },
+      milestones: {
+        create: [
+          { title: "FEC behavioral 모델", kind: "Prototype", dueDate: ymd(3, 31), done: true },
+          { title: "FEC-MLSD 통합 프로토타입", kind: "Prototype", dueDate: ymd(9, 30), done: false },
         ],
       },
     },
@@ -89,30 +119,37 @@ async function main() {
 
   await db.project.create({
     data: {
-      title: "멀티모달 센서 융합 사이드 프로젝트",
-      description: "IMU + 카메라 융합 기반 행동 인식",
+      title: "On-Device Robot AI Optimization",
+      description:
+        "로봇 인터페이스용 온디바이스 AI 경량화 사이드 프로젝트. 서베이 완료 후 아이디어 구체화 단계에서 잠시 보류.",
       status: "ON_HOLD",
-      color: "#a5b4fc",
-      startDate: monthDay(-5, 10),
-      targetDate: monthDay(3, 30),
-      tags: ["multimodal", "sensor"],
-      sortOrder: 2,
+      color: "#f59e0b",
+      startDate: ymd(1, 5),
+      targetDate: ymd(12, 20),
+      tags: ["robot", "on-device", "side-project"],
+      sortOrder: 3,
       tasks: {
         create: [
-          { title: "데이터셋 수집 및 전처리", status: "DONE", priority: "MEDIUM", progress: 100, startDate: monthDay(-5, 10), dueDate: monthDay(-4, 1), sortOrder: 0 },
-          { title: "융합 모델 아키텍처 설계", status: "ON_HOLD", priority: "MEDIUM", progress: 20, dueDate: monthDay(-2, 15), sortOrder: 1 },
+          { title: "로봇 인터페이스 서베이", status: "DONE", priority: "MEDIUM", progress: 100, startDate: ymd(1, 5), dueDate: ymd(3, 31), sortOrder: 0 },
+          { title: "아이디어 구체화", status: "ON_HOLD", priority: "LOW", progress: 25, startDate: ymd(3, 15), dueDate: ymd(6, 30), sortOrder: 1 },
+        ],
+      },
+      milestones: {
+        create: [
+          { title: "서베이 리포트", kind: "Report", dueDate: ymd(3, 31), done: true },
+          { title: "RA-L 논문", kind: "논문", dueDate: ymd(6, 30), done: false },
         ],
       },
     },
   });
 
-  // ---------- Research logs (3 weeks of daily reports) ----------
+  // ---------- Research logs (최근 3주 일일보고서) ----------
   const logBodies = [
-    "## 오늘 한 일\n- INT4 양자화 커널 디버깅\n- perplexity 측정 스크립트 정리\n\n## 이슈\n- 특정 레이어에서 오버플로우 발생, clipping 범위 조정 필요\n\n## 내일 할 일\n- GPTQ 비교 실험 시작",
-    "## 오늘 한 일\n- GPTQ vs AWQ 비교 실험 (3개 모델)\n- 실험 결과 시트 업데이트\n\n## 메모\n- AWQ가 소형 모델에서 일관되게 우세",
-    "## 오늘 한 일\n- 지식 증류 teacher 모델 학습 시작\n- 서버 GPU 스케줄 조정\n\n## 이슈\n- A100 노드 대기열 길어짐, 실험 우선순위 재조정",
-    "## 오늘 한 일\n- DP-SGD 노이즈 스케줄 1차 실험\n- 관련 논문 2편 리뷰\n\n## 내일 할 일\n- epsilon 값별 정확도 곡선 정리",
-    "## 오늘 한 일\n- 중간 발표 자료 준비\n- 벤치마크 표 정리\n\n## 메모\n- 발표 피드백: 실험 셋업 설명 보강 필요",
+    "## 오늘 한 일\n- Duo-MLSD RTL: 브랜치 메트릭 유닛 파이프라이닝 수정\n- 합성 타이밍 리포트 확인 (setup slack -12ps → +8ps)\n\n## 이슈\n- 인터리브 경계에서 survivor path 병합 버그 의심, 파형 덤프 분석 필요\n\n## 내일 할 일\n- survivor memory 트레이스백 로직 재검토",
+    "## 오늘 한 일\n- RX 시스템 시뮬레이션: CTLE + FFE 조합 스윕 돌림 (32케이스)\n- per-phase offset이 BER에 미치는 영향 정리\n\n## 메모\n- 위상별 gain mismatch 1dB 이상이면 MLSD 이득이 눈에 띄게 감소",
+    "## 오늘 한 일\n- FEC behavioral 모델: KP4 RS(544,514) 심볼 에러 카운팅 검증\n- MLSD 출력 에러 버스트 길이 히스토그램 추출\n\n## 내일 할 일\n- 버스트 길이별 post-FEC BER 매핑 테이블 생성",
+    "## 오늘 한 일\n- CDR 루프 대역폭 변화에 따른 MLSD 캘리브레이션 수렴 시간 측정\n- 랩미팅 발표자료 초안 작성\n\n## 이슈\n- 저대역폭 설정에서 수렴 시간이 목표 대비 2배 초과",
+    "## 오늘 한 일\n- ISCAS 논문 아웃라인 작성\n- Duo-MLSD 결과 그림 3종 초안\n\n## 메모\n- 비교 대상: conventional MLSD, 2-tap DFE 기준선 추가하기로",
   ];
   for (let i = 0; i < 21; i++) {
     const d = day(-i);
@@ -121,7 +158,7 @@ async function main() {
     const dateStr = d.toISOString().slice(0, 10);
     await db.researchLog.create({
       data: {
-        projectId: i % 3 === 0 ? p2.id : p1.id,
+        projectId: [p1.id, p2.id, p3.id][i % 3],
         date: d,
         title: `Daily Report ${dateStr}`,
         bodyMd: logBodies[i % logBodies.length],
@@ -135,8 +172,9 @@ async function main() {
     data: {
       projectId: p1.id,
       date: day(-1),
-      title: "양자화 실험 아이디어 메모",
-      bodyMd: "레이어별 mixed-precision 적용 시 민감도 기반 자동 비트 할당 방식을 시도해볼 것.\n\n- Hessian 기반 민감도 측정\n- 온도 스케일링과의 상호작용 확인",
+      title: "CDR-MLSD 공동 적응 아이디어 메모",
+      bodyMd:
+        "CDR 위상 오차 신호를 MLSD 브랜치 메트릭 가중치에 직접 반영하면 별도 캘리브레이션 루프 없이도 타이밍 드리프트를 따라갈 수 있지 않을까.\n\n- 루프 안정성 조건 먼저 유도\n- behavioral 모델에서 위상 스텝 응답 실험",
       source: "manual",
     },
   });
@@ -144,51 +182,52 @@ async function main() {
   // ---------- Ideas ----------
   await db.idea.createMany({
     data: [
-      { title: "LoRA 어댑터 양자화 민감도 분석", body: "어댑터만 고정밀로 유지하고 백본을 극단적으로 양자화하면 어떨까? 메모리-성능 트레이드오프 곡선을 그려보자.", status: "EXPLORING", tags: ["quantization", "lora"] },
-      { title: "연구실 GPU 사용량 대시보드", body: "slurm 로그를 파싱해서 주간 사용률 리포트 자동화.", status: "EXPLORING", tags: ["tooling"] },
-      { title: "센서 데이터 자기지도 사전학습", body: "IMU 시계열에 masked autoencoder 적용. 사이드 프로젝트 재개 시 검토.", status: "ON_HOLD", tags: ["multimodal", "ssl"] },
-      { title: "양자화 인식 증류 (QAD)", body: "증류 과정에서 student의 양자화를 미리 시뮬레이션. → 온디바이스 LLM 프로젝트에 편입됨.", status: "PROMOTED", tags: ["quantization", "distillation"], promotedProjectId: p1.id },
-      { title: "프롬프트 압축 벤치마크", body: "기존 벤치마크가 이미 포화 상태라 novelty 부족.", status: "DISCARDED", tags: ["llm"] },
+      { title: "CDR 위상오차 기반 MLSD 메트릭 가중", body: "CDR 루프의 위상 오차 신호를 MLSD 브랜치 메트릭에 실시간 반영. 별도 캘리브레이션 루프 제거 가능성.", status: "EXPLORING", tags: ["MLSD", "CDR"] },
+      { title: "MLSD survivor depth 적응 제어", body: "채널 ISI 길이 추정에 따라 트레이스백 깊이를 동적으로 줄여 전력 절감. 저손실 채널에서 30% 이상 절감 예상.", status: "EXPLORING", tags: ["MLSD", "low-power"] },
+      { title: "FEC-Aware MLSD (에러 패턴 성형)", body: "KP4 FEC가 버스트 에러에 강한 점을 역이용해 MLSD 에러를 버스트로 몰아주는 방향. → 정식 프로젝트로 승격됨.", status: "PROMOTED", tags: ["MLSD", "FEC"], promotedProjectId: p3.id },
+      { title: "로봇 관절 제어용 경량 추론 파이프라인", body: "서베이는 끝났고 회로 쪽 메인 과제 일정상 하반기까지 보류.", status: "ON_HOLD", tags: ["robot", "on-device"] },
+      { title: "ADC 비선형성 보상 NN 등화기", body: "관련 연구가 이미 포화 상태. ISSCC 2026 세션에서도 유사 작업 다수 확인되어 폐기.", status: "DISCARDED", tags: ["ADC", "NN-EQ"] },
     ],
   });
 
   // ---------- Papers ----------
   await db.paper.createMany({
     data: [
-      { title: "GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers", authors: "Frantar et al.", venue: "ICLR", year: 2023, url: "https://arxiv.org/abs/2210.17323", status: "DONE", rating: 5, tags: ["quantization"], category: "양자화", summaryMd: "**핵심**: 2차 정보(Hessian) 기반 레이어별 가중치 양자화. 3-4bit에서도 성능 유지.\n\n**의의**: PTQ의 사실상 표준. 우리 베이스라인으로 사용." },
-      { title: "AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration", authors: "Lin et al.", venue: "MLSys", year: 2024, url: "https://arxiv.org/abs/2306.00978", status: "DONE", rating: 5, tags: ["quantization"], category: "양자화", summaryMd: "활성값 분포 기반으로 중요 채널을 보호하는 양자화. 소형 모델에서 GPTQ보다 안정적." },
-      { title: "Distilling the Knowledge in a Neural Network", authors: "Hinton et al.", venue: "NeurIPS Workshop", year: 2015, url: "https://arxiv.org/abs/1503.02531", status: "DONE", rating: 4, tags: ["distillation"], category: "증류", summaryMd: "지식 증류의 시조. soft target + temperature." },
-      { title: "SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models", authors: "Xiao et al.", venue: "ICML", year: 2023, url: "https://arxiv.org/abs/2211.10438", status: "READING", rating: null, tags: ["quantization"], category: "양자화", notes: "활성값 outlier를 가중치로 이전하는 아이디어. 우리 세팅에 적용 가능한지 확인 중." },
-      { title: "The Era of 1-bit LLMs: All Large Language Models are in 1.58 Bits", authors: "Ma et al.", venue: "arXiv", year: 2024, url: "https://arxiv.org/abs/2402.17764", status: "TO_READ", tags: ["quantization", "extreme"], category: "양자화" },
-      { title: "Communication-Efficient Learning of Deep Networks from Decentralized Data", authors: "McMahan et al.", venue: "AISTATS", year: 2017, url: "https://arxiv.org/abs/1602.05629", status: "SKIMMED", rating: 4, tags: ["federated-learning"], category: "연합학습", notes: "FedAvg 원 논문. 배경 지식용." },
-      { title: "Deep Learning with Differential Privacy", authors: "Abadi et al.", venue: "CCS", year: 2016, url: "https://arxiv.org/abs/1607.00133", status: "READING", tags: ["privacy", "dp"], category: "연합학습", notes: "DP-SGD 원 논문. moments accountant 부분 정독 필요." },
+      { title: "A 112-Gb/s PAM-4 ADC-Based Receiver with MLSD in 7-nm FinFET", authors: "ISSCC 발표 논문", venue: "ISSCC", year: 2024, url: "https://ieeexplore.ieee.org", status: "DONE", rating: 5, tags: ["MLSD", "ADC-based"], category: "SerDes RX", summaryMd: "**핵심**: ADC 기반 수신단에서 1-tap MLSD로 DFE 대비 BER 마진 확보.\n\n**우리 연구와의 관계**: Duo-MLSD 비교 기준선. 타이밍 캘리브레이션은 별도 루프로 처리 — 우리가 파고들 틈." },
+      { title: "Maximum Likelihood Sequence Estimation for High-Speed Wireline Links (튜토리얼)", authors: "A. Sheikholeslami", venue: "ISSCC Tutorial", year: 2023, status: "DONE", rating: 5, tags: ["MLSD", "tutorial"], category: "SerDes RX", summaryMd: "MLSD 기초부터 구현 트레이드오프까지. 토론토 방문 논의의 베이스라인 자료." },
+      { title: "A 224-Gb/s PAM-4 Transceiver in 3-nm with FEC-Aware Equalization", authors: "JSSC 논문", venue: "JSSC", year: 2025, url: "https://ieeexplore.ieee.org", status: "READING", tags: ["FEC", "224G"], category: "SerDes RX", notes: "FEC-aware 등화라는 표현을 쓰지만 실제로는 pre-FEC BER 최적화. 우리 error-pattern shaping과 차별점 정리 필요." },
+      { title: "Clock and Data Recovery Circuits for Multi-Standard SerDes", authors: "리뷰 논문", venue: "TCAS-I", year: 2022, status: "SKIMMED", rating: 3, tags: ["CDR"], category: "CDR", notes: "CDR 루프 대역폭 설계 관행 파트만 참고." },
+      { title: "Reed-Solomon FEC (KP4) Performance over Burst-Error Channels", authors: "OIF 기고", venue: "OIF", year: 2021, status: "DONE", rating: 4, tags: ["FEC", "KP4"], category: "FEC", summaryMd: "KP4 RS(544,514)의 버스트 에러 허용 특성 정량화. error-pattern shaping의 이론적 근거." },
+      { title: "Time-Interleaved ADC Calibration Techniques: A Survey", authors: "서베이 논문", venue: "TCAS-II", year: 2023, status: "READING", tags: ["time-interleaved", "calibration"], category: "ADC", notes: "per-phase mismatch 종류별 캘리브레이션 분류 참고 중." },
+      { title: "Lightweight Neural Inference on Robot MCUs: A Survey", authors: "서베이 논문", venue: "RA-L", year: 2024, status: "TO_READ", tags: ["robot", "on-device"], category: "Robot AI" },
     ],
   });
 
   // ---------- Library ----------
   await db.libraryItem.createMany({
     data: [
-      { title: "Papers with Code - Quantization", url: "https://paperswithcode.com/task/quantization", category: "리서치", tags: ["quantization"], pinned: true },
-      { title: "lm-evaluation-harness", url: "https://github.com/EleutherAI/lm-evaluation-harness", snippet: "LLM 벤치마크 표준 도구. --tasks 옵션으로 태스크 선택.", category: "도구", tags: ["benchmark"], pinned: true },
-      { title: "연구실 서버 예약 시트", url: "https://docs.google.com/spreadsheets/example", category: "연구실", tags: ["gpu"] },
-      { title: "NeurIPS 2026 CFP", url: "https://neurips.cc/Conferences/2026/CallForPapers", snippet: "Abstract 마감 5월, Full paper 마감 5월 말 예상", category: "학회", tags: ["deadline"], pinned: true },
-      { title: "CUDA 커널 프로파일링 치트시트", snippet: "nsys profile -o out ./run.sh\nncu --set full --kernel-name regex:gemm ./bin\n메모리 바운드 판단: SM 활용률 < 40% && DRAM 처리량 > 70%", category: "도구", tags: ["cuda", "profiling"] },
-      { title: "장학금/연구비 규정 모음", url: "https://example.university.ac.kr/rules", category: "행정", tags: ["행정"] },
+      { title: "ISSCC 2027 저자 안내 (마감 9월 초)", url: "https://www.isscc.org/authors", category: "학회", tags: ["deadline", "ISSCC"], pinned: true },
+      { title: "IEEE Xplore - JSSC 최신호", url: "https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=4", category: "리서치", tags: ["JSSC"] },
+      { title: "연구실 서버 EDA 라이선스 현황판", url: "https://docs.google.com/spreadsheets/example", category: "연구실", tags: ["EDA"], pinned: true },
+      { title: "SystemVerilog 랜덤 검증 치트시트", snippet: "constraint 안에서 dist 가중치:\nx dist {0:=60, [1:7]:/40};\ncovergroup은 posedge 말고 샘플 이벤트로 트리거할 것.", category: "도구", tags: ["SV", "verification"] },
+      { title: "Matlab-Python 시뮬레이션 브리지 스니펫", snippet: "matlab.engine 대신 .mat 덤프 + scipy.io.loadmat이 클러스터에서 안정적.", category: "도구", tags: ["matlab", "sim"] },
+      { title: "출장 정산 규정 요약 (학교 행정)", url: "https://example.university.ac.kr/rules", category: "행정", tags: ["출장", "정산"] },
+      { title: "A-SSCC 2026 CFP", url: "https://www.a-sscc.org", snippet: "제출 마감 5월, 개최 11월 (예정). 국내 개최 여부 확인.", category: "학회", tags: ["deadline", "A-SSCC"] },
     ],
   });
 
   // ---------- Planner ----------
   await db.planItem.createMany({
     data: [
-      { title: "랩미팅 발표 준비", kind: "TODO", date: day(1), priority: "HIGH", done: false, progress: 40 },
+      { title: "랩미팅 발표자료 마무리", kind: "TODO", date: day(1), priority: "HIGH", done: false, progress: 60 },
       { title: "랩미팅", kind: "EVENT", date: day(2), priority: "MEDIUM", done: false },
-      { title: "INT4 실험 결과 정리", kind: "TODO", date: day(3), priority: "URGENT", done: false, progress: 10 },
-      { title: "지도교수 면담", kind: "EVENT", date: day(4), priority: "HIGH", done: false, notes: "실험 방향 논의" },
-      { title: "논문 리뷰 2편 (SmoothQuant, DP 논문)", kind: "TODO", date: day(5), priority: "MEDIUM", done: false },
-      { title: "서버 백업 확인", kind: "TODO", date: day(-1), priority: "LOW", done: true, progress: 100 },
+      { title: "Duo-MLSD RTL 코드리뷰 반영", kind: "TODO", date: day(3), priority: "URGENT", done: false, progress: 20 },
+      { title: "지도교수 면담 (테이프아웃 일정)", kind: "EVENT", date: day(4), priority: "HIGH", done: false, notes: "MPW 셔틀 일정 확정 논의" },
+      { title: "ISCAS 논문 아웃라인 리뷰", kind: "TODO", date: day(5), priority: "MEDIUM", done: false },
+      { title: "시뮬레이션 서버 스토리지 정리", kind: "TODO", date: day(-1), priority: "LOW", done: true, progress: 100 },
       { title: "주간 보고서 작성", kind: "TODO", date: day(-2), priority: "MEDIUM", done: true, progress: 100 },
-      { title: "출장 정산 서류 제출", kind: "TODO", date: day(7), priority: "HIGH", done: false },
-      { title: "GPU 서버 정기 점검", kind: "EVENT", date: day(10), priority: "LOW", done: false },
+      { title: "스위스 공동연구 후속 화상미팅", kind: "EVENT", date: day(7), priority: "HIGH", done: false, notes: "로잔 팀과 측정 셋업 논의" },
+      { title: "FPGA 보드 발주", kind: "TODO", date: day(9), priority: "HIGH", done: false },
     ],
   });
 
@@ -202,23 +241,27 @@ async function main() {
         energy: Math.max(1, Math.min(5, Math.round(base + ((i * 5) % 3) - 1))),
         sleepHours: Math.round((6 + ((i * 3) % 5) * 0.5) * 10) / 10,
         sleepQuality: Math.max(1, Math.min(5, Math.round(base))),
-        note: i === 0 ? "실험 잘 풀려서 컨디션 좋음" : null,
+        note: i === 0 ? "RTL 버그 잡혀서 컨디션 좋음" : null,
       },
     });
   }
 
-  // ---------- Habits ----------
+  // ---------- Habits (색상 + 이모지) ----------
   const habits = await Promise.all([
-    db.habit.create({ data: { name: "논문 1편 읽기", icon: "book", daysOfWeek: [1, 2, 3, 4, 5], sortOrder: 0 } }),
-    db.habit.create({ data: { name: "운동 30분", icon: "dumbbell", daysOfWeek: [], sortOrder: 1 } }),
-    db.habit.create({ data: { name: "연구일지 작성", icon: "pen", daysOfWeek: [1, 2, 3, 4, 5], sortOrder: 2 } }),
-    db.habit.create({ data: { name: "7시간 이상 수면", icon: "moon", daysOfWeek: [], sortOrder: 3 } }),
+    db.habit.create({ data: { name: "기상 7시", icon: "⏰", color: "#93c5fd", daysOfWeek: [], sortOrder: 0 } }),
+    db.habit.create({ data: { name: "논문 1편 읽기", icon: "📖", color: "#c4b5fd", daysOfWeek: [1, 2, 3, 4, 5], sortOrder: 1 } }),
+    db.habit.create({ data: { name: "연구일지 작성", icon: "✍️", color: "#fdba74", daysOfWeek: [1, 2, 3, 4, 5], sortOrder: 2 } }),
+    db.habit.create({ data: { name: "운동 30분", icon: "💪", color: "#86efac", daysOfWeek: [], sortOrder: 3 } }),
+    db.habit.create({ data: { name: "7시간 이상 수면", icon: "🌙", color: "#f9a8d4", daysOfWeek: [], sortOrder: 4 } }),
   ]);
-  for (let i = 0; i < 21; i++) {
+  for (let i = 0; i < 45; i++) {
+    const d = day(-i);
     for (const [idx, habit] of habits.entries()) {
-      // pseudo-random but deterministic completion pattern (~70%)
-      if ((i * 31 + idx * 17) % 10 < 7) {
-        await db.habitLog.create({ data: { habitId: habit.id, date: day(-i), done: true } });
+      const scheduled =
+        habit.daysOfWeek.length === 0 || habit.daysOfWeek.includes(d.getUTCDay());
+      // pseudo-random but deterministic completion pattern (~72%)
+      if (scheduled && (i * 31 + idx * 17) % 10 < 7.2) {
+        await db.habitLog.create({ data: { habitId: habit.id, date: d, done: true } });
       }
     }
   }
@@ -227,53 +270,67 @@ async function main() {
   const claude = await db.recurringExpense.create({
     data: { item: "Claude Code 구독", amount: 30000, category: "SW 구독", vendor: "Anthropic", dayOfMonth: 5, active: true },
   });
-  const gpu = await db.recurringExpense.create({
-    data: { item: "클라우드 GPU 크레딧", amount: 150000, category: "클라우드", vendor: "AWS", dayOfMonth: 1, active: true },
+  const sim = await db.recurringExpense.create({
+    data: { item: "시뮬레이션 클라우드 (합성/검증)", amount: 180000, category: "클라우드", vendor: "AWS", dayOfMonth: 1, active: true },
   });
   await db.expenseItem.createMany({
     data: [
-      { date: monthDay(0, 1), item: "클라우드 GPU 크레딧", amount: 150000, category: "클라우드", vendor: "AWS", receiptFiled: true, recurringId: gpu.id },
-      { date: monthDay(0, 5), item: "Claude Code 구독", amount: 30000, category: "SW 구독", vendor: "Anthropic", receiptFiled: true, recurringId: claude.id },
-      { date: monthDay(0, 8), item: "실험용 SSD 2TB", amount: 189000, category: "장비", vendor: "쿠팡", receiptFiled: false },
-      { date: monthDay(0, 10), item: "학회 사전등록비", amount: 450000, category: "학회", vendor: "NeurIPS", receiptFiled: false, note: "환율 기준일 확인 필요" },
-      { date: monthDay(-1, 5), item: "Claude Code 구독", amount: 30000, category: "SW 구독", vendor: "Anthropic", receiptFiled: true, recurringId: claude.id },
-      { date: monthDay(-1, 1), item: "클라우드 GPU 크레딧", amount: 150000, category: "클라우드", vendor: "AWS", receiptFiled: true, recurringId: gpu.id },
-      { date: monthDay(-1, 18), item: "도서 (통계적 학습 이론)", amount: 52000, category: "도서", vendor: "교보문고", receiptFiled: true },
+      { date: day(-12), item: "시뮬레이션 클라우드 (합성/검증)", amount: 180000, category: "클라우드", vendor: "AWS", receiptFiled: true, recurringId: sim.id },
+      { date: day(-8), item: "Claude Code 구독", amount: 30000, category: "SW 구독", vendor: "Anthropic", receiptFiled: true, recurringId: claude.id },
+      { date: day(-5), item: "FPGA 개발보드 (VCU118 중고)", amount: 2450000, category: "장비", vendor: "장비몰", receiptFiled: false, note: "학과 장비심의 서류 별도" },
+      { date: day(-3), item: "ISCAS 사전등록비", amount: 620000, category: "학회", vendor: "IEEE", receiptFiled: false, note: "환율 기준일 확인" },
+      { date: day(-40), item: "Claude Code 구독", amount: 30000, category: "SW 구독", vendor: "Anthropic", receiptFiled: true, recurringId: claude.id },
+      { date: day(-42), item: "시뮬레이션 클라우드 (합성/검증)", amount: 180000, category: "클라우드", vendor: "AWS", receiptFiled: true, recurringId: sim.id },
+      { date: day(-35), item: "도서 (Digital Communications, Proakis)", amount: 78000, category: "도서", vendor: "교보문고", receiptFiled: true },
     ],
   });
 
   // ---------- Docs: trips & proposals ----------
   await db.tripReport.create({
     data: {
-      title: "국내 학회 참석 (한국정보과학회)",
-      destination: "부산 BEXCO",
-      startDate: monthDay(-1, 20),
-      endDate: monthDay(-1, 22),
-      purpose: "논문 발표 및 최신 연구 동향 조사",
-      outcomesMd: "## 주요 성과\n- 포스터 발표 1건 완료, 질의 5건 대응\n- 양자화 관련 세션 3개 청취\n- 타 연구실 2곳과 협력 논의 시작\n\n## 후속 조치\n- 협력 논의 이메일 발송\n- 발표 피드백 반영하여 실험 추가",
-      expenses: 385000,
+      title: "ISSCC 2026 학회 참석 (샌프란시스코)",
+      destination: "미국 샌프란시스코",
+      startDate: ymd(2, 15),
+      endDate: ymd(2, 20),
+      purpose: "ISSCC 2026 학회 참석 및 최신 SerDes/MLSD 연구 동향 조사",
+      outcomesMd:
+        "## 주요 성과\n- Plenary·technical session 및 student research preview 참석\n- 112G/224G 수신단 세션 집중 청취, MLSD 관련 발표 4건 정리\n- Univ. of Toronto Sheikholeslami 교수 등 연구자들과 교류\n\n## 후속 조치\n- 세션 노트 랩 세미나 공유\n- 토론토 그룹과 MLSD 캘리브레이션 주제 후속 논의",
+      expenses: 4850000,
+    },
+  });
+  await db.tripReport.create({
+    data: {
+      title: "스위스 공동연구 방문 (로잔·취리히)",
+      destination: "스위스 로잔·취리히",
+      startDate: ymd(3, 10),
+      endDate: ymd(3, 16),
+      purpose: "공동연구 킥오프 미팅 및 측정 인프라 협의",
+      outcomesMd:
+        "## 주요 성과\n- 로잔 팀과 FEC-MLSD 공동 실험 범위 합의\n- 취리히 랩 고속 측정 셋업 견학, 칩 측정 협력 가능성 확인\n\n## 후속 조치\n- 공동 실험 계획서 초안 작성 (7월)\n- 정기 화상미팅 격주 운영",
+      expenses: 3620000,
     },
   });
   await db.proposalDoc.createMany({
     data: [
       {
-        title: "차세대 온디바이스 AI 원천기술 개발",
+        title: "차세대 초고속 유선 링크용 지능형 수신단 원천기술",
         agency: "한국연구재단",
         program: "신진연구자지원사업",
-        deadline: monthDay(2, 15),
+        deadline: day(45),
         budget: "연 1.5억 x 3년",
         durationMonths: 36,
-        abstractMd: "모바일·엣지 환경에서 대규모 언어모델을 실시간 구동하기 위한 초경량화 원천기술 개발. 양자화-증류 통합 프레임워크와 하드웨어 인지형 최적화를 통해 기존 대비 10배 이상의 효율 개선을 목표로 함.",
+        abstractMd:
+          "224Gb/s급 유선 링크를 위한 타이밍 인지형 MLSD 수신단 원천기술 개발. CDR 동특성과 결합된 캘리브레이션, FEC 인지형 에러 성형을 통해 기존 대비 전력 효율과 BER 마진을 동시 개선.",
         status: "draft",
       },
       {
-        title: "프라이버시 보존 분산학습 플랫폼",
+        title: "AI 기반 고속 인터커넥트 신호처리 플랫폼",
         agency: "IITP",
         program: "정보통신방송기술개발",
-        deadline: monthDay(1, 30),
+        deadline: day(17),
         budget: "연 3억 x 2년 (공동)",
         durationMonths: 24,
-        abstractMd: "의료 데이터 활용을 위한 차분 프라이버시 기반 연합학습 플랫폼 구축.",
+        abstractMd: "데이터센터 인터커넥트를 위한 학습 기반 등화·검출 통합 플랫폼 구축 (공동과제).",
         status: "submitted",
       },
     ],

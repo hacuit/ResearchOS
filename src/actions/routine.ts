@@ -41,7 +41,13 @@ export async function createHabit(fd: FormData) {
     .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
   const max = await db.habit.aggregate({ _max: { sortOrder: true } });
   await db.habit.create({
-    data: { name, daysOfWeek, sortOrder: (max._max.sortOrder ?? 0) + 1 },
+    data: {
+      name,
+      icon: strOrNull(fd, "icon"),
+      color: strOrNull(fd, "color"),
+      daysOfWeek,
+      sortOrder: (max._max.sortOrder ?? 0) + 1,
+    },
   });
   revalidateRoutine();
 }
@@ -55,7 +61,13 @@ export async function updateHabit(id: string, fd: FormData) {
     .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
   await db.habit.update({
     where: { id },
-    data: { name, daysOfWeek, active: fd.get("active") === "on" },
+    data: {
+      name,
+      icon: strOrNull(fd, "icon"),
+      color: strOrNull(fd, "color"),
+      daysOfWeek,
+      active: fd.get("active") === "on",
+    },
   });
   revalidateRoutine();
 }
