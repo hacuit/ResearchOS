@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx next build)"
+      "Bash(rm -rf /tmp/claude-0/researchos/.git)",
+      "Bash(cp -a /tmp/claude-0/researchos/. /home/user/ResearchOS/)",
+      "Bash(rm -rf /tmp/claude-0/researchos)",
+      "Bash(node -e \"const p=require\\('/home/user/ResearchOS/package.json'\\); console.log\\(JSON.stringify\\({deps:p.dependencies, dev:p.devDependencies},null,1\\)\\)\")"
     ]
   }
 }

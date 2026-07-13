@@ -1,114 +1,36 @@
-﻿# 🔬 ResearchOS
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-> **AI-Powered Research Management Workspace**
-> Manage ideas, tasks, deliverables, and daily reports in one unified dashboard.
+## Getting Started
 
-![Project Status](https://img.shields.io/badge/Status-Active-success)
-![Frontend](https://img.shields.io/badge/Frontend-Next.js-black)
-![Backend](https://img.shields.io/badge/Backend-FastAPI-009688)
-![Database](https://img.shields.io/badge/Database-PostgreSQL-336791)
-
-
----
-
-## 🌟 Features
-
-- **📊 Dashboard**: Real-time overview of research progress, idea status, and task completion.
-- **💡 Idea Management**: Track research ideas from inception to publication.
-- **✅ Task & Gantt Chart**: Manage tasks with dependencies and visualize timeline.
-- **📝 Daily Reports & AI Analysis**: Upload markdown reports and let AI summarize and tag them automatically.
-- **🤖 AI Integration**: Automatic risk detection, next action recommendations, and progress tracking using OpenAI.
-
----
-
-## 🛠️ Technology Stack
-
-### Frontend
-- **Framework**: Next.js 14 (App Router)
-- **Styling**: Vanilla CSS (Modern, Responsive)
-- **Deployment**: Vercel (Automatic CI/CD)
-
-### Backend
-- **Framework**: FastAPI (Python 3.11+)
-- **Database**: PostgreSQL (via SQLAlchemy)
-- **AI**: OpenAI GPT-4o-mini
-- **Deployment**: Render (Automatic CI/CD)
-
----
-
-## 💻 Local Development Guide
-
-Follow these steps to set up the project locally.
-
-### 1. Clone the Repository
+First, run the development server:
 
 ```bash
-git clone https://github.com/hacuit/ResearchOS.git
-cd ResearchOS
-```
-
-### 2. Backend Setup
-
-```bash
-cd backend
-
-# Create virtual environment
-python -m venv venv
-# Activate (Windows)
-.\venv\Scripts\Activate
-# Activate (Mac/Linux)
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Create .env file
-copy .env.example .env
-# ⚠️ Open .env and add your OPENAI_API_KEY
-```
-
-Run the backend server:
-```bash
-# Run server (Auto-reload)
-uvicorn app.main:app --reload
-```
-> Server running at: http://localhost:8000
-
-### 3. Frontend Setup
-
-Open a new terminal.
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Create .env.local file
-echo "NEXT_PUBLIC_API_BASE=http://localhost:8000" > .env.local
-
-# Run development server
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
-> App running at: http://localhost:3000
 
----
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## 🔄 Deployment & CI/CD
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project is configured with **Automated Continuous Deployment**:
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-| Component | Platform | Trigger |
-|-----------|----------|---------|
-| **Frontend** | [Vercel](https://vercel.com) | Push to `main` (frontend/**) |
-| **Backend** | [Render](https://render.com) | Push to `main` (backend/**) |
+## Learn More
 
-### Environment Variables Required
+To learn more about Next.js, take a look at the following resources:
 
-**Frontend (Vercel)**
-- `NEXT_PUBLIC_API_BASE`: URL of the deployed backend (e.g., `https://researchos-backend.onrender.com`)
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-**Backend (Render)**
-- `OPENAI_API_KEY`: Your OpenAI API Key
-- `DATABASE_URL`: PostgreSQL Connection String (Auto-configured on Render)
-- `OWNER_PASSWORD`: Admin password for the workspace
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
