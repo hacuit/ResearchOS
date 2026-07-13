@@ -206,7 +206,7 @@ export function IdeaBoard({ ideas }: { ideas: IdeaData[] }) {
         })}
       </div>
 
-      <IdeaFormDialog open={formOpen} onClose={() => setFormOpen(false)} idea={editing} />
+      <IdeaFormDialog key={editing?.id ?? "new"} open={formOpen} onClose={() => setFormOpen(false)} idea={editing} />
     </div>
   );
 }

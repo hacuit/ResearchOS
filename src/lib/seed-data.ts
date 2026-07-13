@@ -30,6 +30,8 @@ export async function runSeed(db: PrismaClient) {
   await db.recurringExpense.deleteMany();
   await db.tripReport.deleteMany();
   await db.proposalDoc.deleteMany();
+  await db.venueDate.deleteMany();
+  await db.venue.deleteMany();
 
   // ---------- Projects / Tasks / Milestones (2026 연구 계획) ----------
   const p1 = await db.project.create({
@@ -335,4 +337,103 @@ export async function runSeed(db: PrismaClient) {
     ],
   });
 
+
+  await seedVenues(db);
+}
+
+/** Adds the default conference/journal venues if none exist yet. */
+export async function seedVenues(db: PrismaClient): Promise<boolean> {
+  if ((await db.venue.count()) > 0) return false;
+
+  const venues: Array<{
+    name: string; fullName: string; type: "CONFERENCE" | "JOURNAL";
+    field: string; siteUrl: string; submitUrl?: string; color: string; note?: string;
+    dates: Array<{ kind: string; date: Date; endDate?: Date; note?: string }>;
+  }> = [
+    {
+      name: "ISSCC", fullName: "International Solid-State Circuits Conference",
+      type: "CONFERENCE", field: "회로 (IC)", siteUrl: "https://www.isscc.org",
+      submitUrl: "https://submissions.mirasmart.com/ISSCC2027", color: "#4f46e5",
+      dates: [
+        { kind: "논문 마감", date: ymd(9, 7), note: "예상 일정 — 공식 확인" },
+        { kind: "개최", date: ymd(2, 21, 2027), endDate: ymd(2, 25, 2027), note: "샌프란시스코" },
+      ],
+    },
+    {
+      name: "VLSI", fullName: "Symposium on VLSI Technology and Circuits",
+      type: "CONFERENCE", field: "회로 (IC)", siteUrl: "https://vlsisymposium.org", color: "#8b5cf6",
+      dates: [
+        { kind: "논문 마감", date: ymd(1, 25, 2027), note: "예상 일정 — 공식 확인" },
+        { kind: "개최", date: ymd(6, 14, 2027), endDate: ymd(6, 18, 2027), note: "교토" },
+      ],
+    },
+    {
+      name: "A-SSCC", fullName: "Asian Solid-State Circuits Conference",
+      type: "CONFERENCE", field: "회로 (IC)", siteUrl: "https://www.a-sscc.org", color: "#0ea5e9",
+      dates: [
+        { kind: "논문 마감", date: ymd(5, 11), note: "마감 지남 (2026)" },
+        { kind: "개최", date: ymd(11, 16), endDate: ymd(11, 19), note: "예상 일정 — 공식 확인" },
+      ],
+    },
+    {
+      name: "ESSERC", fullName: "European Solid-State Electronics Research Conference",
+      type: "CONFERENCE", field: "회로 (IC)", siteUrl: "https://www.esserc.org", color: "#10b981",
+      dates: [
+        { kind: "논문 마감", date: ymd(4, 13), note: "마감 지남 (2026)" },
+        { kind: "개최", date: ymd(9, 14), endDate: ymd(9, 17), note: "예상 일정 — 공식 확인" },
+      ],
+    },
+    {
+      name: "ISCAS", fullName: "International Symposium on Circuits and Systems",
+      type: "CONFERENCE", field: "회로/시스템", siteUrl: "https://ieee-cas.org", color: "#f59e0b",
+      dates: [
+        { kind: "논문 마감", date: ymd(10, 19), note: "예상 일정 — 공식 확인" },
+        { kind: "개최", date: ymd(5, 23, 2027), endDate: ymd(5, 26, 2027) },
+      ],
+    },
+    {
+      name: "ICASSP", fullName: "International Conference on Acoustics, Speech and Signal Processing",
+      type: "CONFERENCE", field: "신호처리", siteUrl: "https://ieeeicassp.org", color: "#f43f5e",
+      dates: [
+        { kind: "논문 마감", date: ymd(9, 17), note: "예상 일정 — 공식 확인" },
+        { kind: "개최", date: ymd(5, 4, 2027), endDate: ymd(5, 8, 2027) },
+      ],
+    },
+    {
+      name: "DAC", fullName: "Design Automation Conference",
+      type: "CONFERENCE", field: "EDA", siteUrl: "https://www.dac.com", color: "#14b8a6",
+      dates: [
+        { kind: "Abstract 마감", date: ymd(11, 17), note: "예상 일정 — 공식 확인" },
+        { kind: "논문 마감", date: ymd(11, 24), note: "예상 일정 — 공식 확인" },
+        { kind: "개최", date: ymd(6, 27, 2027), endDate: ymd(7, 1, 2027) },
+      ],
+    },
+    {
+      name: "DATE", fullName: "Design, Automation and Test in Europe",
+      type: "CONFERENCE", field: "EDA", siteUrl: "https://www.date-conference.com", color: "#64748b",
+      dates: [
+        { kind: "논문 마감", date: ymd(9, 13), note: "예상 일정 — 공식 확인" },
+        { kind: "개최", date: ymd(4, 19, 2027), endDate: ymd(4, 21, 2027) },
+      ],
+    },
+    {
+      name: "JSSC", fullName: "IEEE Journal of Solid-State Circuits",
+      type: "JOURNAL", field: "회로 (IC)", siteUrl: "https://sscs.ieee.org/publications/ieee-journal-of-solid-state-circuits",
+      submitUrl: "https://mc.manuscriptcentral.com/jssc", color: "#7c3aed",
+      note: "상시 제출 (rolling submission)",
+      dates: [],
+    },
+  ];
+
+  for (const [i, v] of venues.entries()) {
+    await db.venue.create({
+      data: {
+        name: v.name, fullName: v.fullName, type: v.type, field: v.field,
+        siteUrl: v.siteUrl, submitUrl: v.submitUrl ?? null, color: v.color,
+        note: v.note ?? null, sortOrder: i,
+        dates: { create: v.dates },
+      },
+    });
+  }
+  return true;
 }

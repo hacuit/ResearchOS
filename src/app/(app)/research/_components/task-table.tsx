@@ -252,6 +252,7 @@ export function TaskTable({
       </div>
 
       <TaskFormDialog
+        key={editing?.id ?? "new"}
         open={formOpen}
         onClose={() => setFormOpen(false)}
         projectId={projectId}

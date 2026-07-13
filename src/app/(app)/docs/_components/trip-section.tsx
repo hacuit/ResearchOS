@@ -141,7 +141,7 @@ export function TripSection({ trips }: { trips: TripData[] }) {
         </div>
       )}
 
-      <TripFormDialog open={formOpen} onClose={() => setFormOpen(false)} trip={editing} />
+      <TripFormDialog key={editing?.id ?? "new"} open={formOpen} onClose={() => setFormOpen(false)} trip={editing} />
     </div>
   );
 }

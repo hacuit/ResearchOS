@@ -290,6 +290,42 @@ model ProposalDoc {
   updatedAt      DateTime  @updatedAt
 }
 
+// ---------- Venues (학회/저널) ----------
+
+enum VenueType {
+  CONFERENCE
+  JOURNAL
+}
+
+model Venue {
+  id        String      @id @default(cuid())
+  name      String
+  fullName  String?
+  type      VenueType   @default(CONFERENCE)
+  field     String?
+  siteUrl   String?
+  submitUrl String?
+  color     String?
+  note      String?
+  sortOrder Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  dates     VenueDate[]
+}
+
+model VenueDate {
+  id      String    @id @default(cuid())
+  venueId String
+  venue   Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  kind    String
+  date    DateTime  @db.Date
+  endDate DateTime? @db.Date
+  note    String?
+
+  @@index([venueId])
+  @@index([date])
+}
+
 // ---------- Settings ----------
 
 model ApiToken {

@@ -298,6 +298,7 @@ export function PaperList({
       )}
 
       <PaperFormDialog
+        key={editing?.id ?? "new"}
         open={formOpen}
         onClose={() => setFormOpen(false)}
         paper={editing}

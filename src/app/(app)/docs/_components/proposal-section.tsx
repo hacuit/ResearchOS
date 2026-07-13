@@ -173,7 +173,7 @@ export function ProposalSection({ proposals }: { proposals: ProposalData[] }) {
         </div>
       )}
 
-      <ProposalFormDialog open={formOpen} onClose={() => setFormOpen(false)} proposal={editing} />
+      <ProposalFormDialog key={editing?.id ?? "new"} open={formOpen} onClose={() => setFormOpen(false)} proposal={editing} />
     </div>
   );
 }

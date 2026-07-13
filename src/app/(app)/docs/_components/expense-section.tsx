@@ -350,6 +350,7 @@ export function ExpenseSection({
       <RecurringManager recurring={recurring} />
 
       <ExpenseFormDialog
+        key={editing?.id ?? "new"}
         open={formOpen}
         onClose={() => setFormOpen(false)}
         expense={editing}

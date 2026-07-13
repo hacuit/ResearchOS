@@ -204,6 +204,7 @@ export function LibraryList({
       )}
 
       <ItemFormDialog
+        key={editing?.id ?? "new"}
         open={formOpen}
         onClose={() => setFormOpen(false)}
         item={editing}

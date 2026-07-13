@@ -240,7 +240,7 @@ export function HabitTracker({
         </table>
       </div>
 
-      <HabitFormDialog open={formOpen} onClose={() => setFormOpen(false)} habit={editing} />
+      <HabitFormDialog key={editing?.id ?? "new"} open={formOpen} onClose={() => setFormOpen(false)} habit={editing} />
     </div>
   );
 }

@@ -47,6 +47,7 @@ export default async function DashboardPage() {
     upcomingMilestones,
     upcomingPlans,
     upcomingProposals,
+    upcomingVenueDates,
     recentLogs,
     habitLogsThisWeek,
   ] = await Promise.all([
@@ -92,6 +93,11 @@ export default async function DashboardPage() {
     db.proposalDoc.findMany({
       where: { status: "draft", deadline: { not: null, lte: deadlineEnd } },
       orderBy: { deadline: "asc" },
+    }),
+    db.venueDate.findMany({
+      where: { kind: { contains: "마감" }, date: { gte: today, lte: deadlineEnd } },
+      include: { venue: { select: { name: true } } },
+      orderBy: { date: "asc" },
     }),
     db.researchLog.findMany({
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
@@ -190,6 +196,15 @@ export default async function DashboardPage() {
       href: "/docs?tab=proposals",
       kind: "제안서",
       overdue: p.deadline! < today,
+    })),
+    ...upcomingVenueDates.map((d) => ({
+      id: `v-${d.id}`,
+      date: d.date,
+      title: `${d.venue.name} ${d.kind}`,
+      context: d.note ?? "학회/저널",
+      href: "/venues",
+      kind: "학회",
+      overdue: false,
     })),
   ]
     .sort((a, b) => a.date.getTime() - b.date.getTime())
